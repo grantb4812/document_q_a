@@ -26,13 +26,11 @@ fastify.register(fastifyStatic, {
 fastify.get("/*", async (request, reply) => {
   return reply.sendFile("index.html");
 });
+
 // Start the server
-const start = async () => {
-  try {
-    await fastify.listen({ port: 3000 });
-  } catch (err) {
+fastify.listen({ port: 3000 })
+  .catch(err => {
     fastify.log.error(err);
     process.exit(1);
-  }
-};
-start();
+  });
+

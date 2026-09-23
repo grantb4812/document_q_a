@@ -1,4 +1,3 @@
-
 import { CssBaseline, Box, ThemeProvider } from '@mui/material'
 import theme from './theme'
 import Header from './components/Header'
@@ -26,12 +25,14 @@ function App() {
             flex: 1,
             display: 'flex',
             gap: 1.5,
-            p: 1.5,
+            px: 1.5,
+            pb: 1.5,
+            pt: 0.5,
             overflow: 'hidden',
           }}
         >
           {/* Left Panel: Sources */}
-          <Box sx={{ width: { xs: '100%', md: '280px', lg: '300px' }, height: '100%' }}>
+          <Box sx={{ width: { xs: 240, md: 280, lg: 300 }, height: '100%' }}>
             <Sources />
           </Box>
 
@@ -41,7 +42,7 @@ function App() {
           </Box>
 
           {/* Right Panel: Studio */}
-          <Box sx={{ width: { xs: '100%', md: '320px', lg: '360px' }, height: '100%' }}>
+          <Box sx={{ width: { xs: 260, md: 320, lg: 360 }, height: '100%' }}>
             <Studio />
           </Box>
         </Box>
@@ -51,4 +52,3 @@ function App() {
 }
 
 export default App
-

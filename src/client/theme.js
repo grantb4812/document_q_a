@@ -10,7 +10,7 @@ export const theme = createTheme({
       contrastText: '#ffffff',
     },
     background: {
-      default: '#f0f4f9',
+      default: '#edeffa',
       paper: '#ffffff',
     },
     text: {
@@ -40,7 +40,7 @@ export const theme = createTheme({
     },
   },
   shape: {
-    borderRadius: 16,
+    borderRadius: 24,
   },
   components: {
     MuiPaper: {
@@ -69,7 +69,7 @@ export const theme = createTheme({
       },
       styleOverrides: {
         root: {
-          backgroundColor: '#f0f4f9',
+          backgroundColor: '#edeffa',
           borderBottom: 'none',
         },
       },
