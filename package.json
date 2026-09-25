@@ -16,13 +16,19 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@fastify/autoload": "^6.5.0",
+    "@fastify/multipart": "^10.1.2",
     "@fastify/static": "^10.1.4",
     "@mui/icons-material": "^9.4.0",
     "@mui/material": "^9.4.0",
     "better-sqlite3": "^13.0.3",
+    "dotenv": "^18.0.3",
     "fastify": "^5.12.5",
+    "js-tiktoken": "^1.0.21",
+    "openai": "^7.23.0",
+    "pdf-parse": "^2.4.5",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "sqlite-vec": "^0.1.9"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

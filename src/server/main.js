@@ -1,7 +1,9 @@
+import "dotenv/config";
 import path from "path";
 import { fileURLToPath } from "url";
 
 import Fastify from "fastify";
+import fastifyMultipart from "@fastify/multipart";
 import fastifyStatic from "@fastify/static";
 import autoLoad from "@fastify/autoload";
 
@@ -10,9 +12,13 @@ const __dirname = path.dirname(__filename);
 
 const fastify = Fastify({ logger: true });
 
+// multipart support for file uploads
+fastify.register(fastifyMultipart);
+
 //api
 fastify.register(autoLoad, {
   dir: path.join(__dirname, 'routes'),
+  indexPattern: /^.*route(?:\.js)$/,
   options: { prefix: '/api' } 
 });
 

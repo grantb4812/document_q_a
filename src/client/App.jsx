@@ -1,9 +1,9 @@
 import { CssBaseline, Box, ThemeProvider } from '@mui/material'
 import theme from './theme'
-import Header from './components/Header'
-import Sources from './components/Sources'
-import Chat from './components/Chat'
-import Studio from './components/Studio'
+import Header from './header/Header'
+import Sources from './sources/Sources'
+import Chat from './chat/Chat'
+import Retrieval from './retrieval/Retrieval'
 
 function App() {
   return (
@@ -43,7 +43,7 @@ function App() {
 
           {/* Right Panel: Studio */}
           <Box sx={{ width: { xs: 260, md: 320, lg: 360 }, height: '100%' }}>
-            <Studio />
+            <Retrieval />
           </Box>
         </Box>
       </Box>

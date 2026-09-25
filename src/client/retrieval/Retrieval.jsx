@@ -1,6 +1,6 @@
 import { Paper } from '@mui/material'
 
-function Studio() {
+function Retrieval() {
   return (
     <Paper
       elevation={0}
@@ -14,4 +14,4 @@ function Studio() {
   )
 }
 
-export default Studio
+export default Retrieval
