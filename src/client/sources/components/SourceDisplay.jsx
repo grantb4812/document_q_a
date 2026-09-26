@@ -8,10 +8,12 @@ import {
   IconButton,
   Button,
   Tooltip,
+  Chip,
 } from '@mui/material'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import ErrorOutlinedIcon from '@mui/icons-material/ErrorOutlined'
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined'
+import MonetizationOnOutlinedIcon from '@mui/icons-material/MonetizationOnOutlined'
 import { useSources } from '../context/useSources'
 import { PROCESSING_STEPS } from '../constants/sourcesConstants'
 import { getFileIcon } from '../utils/fileIcons'
@@ -42,6 +44,25 @@ function SourceDisplay() {
     return null
   }
 
+  // Calculate total corpus totals across all sources
+  const completedSources = sources.filter((s) => s.status === 'complete')
+  const totalCorpusChunks = completedSources.reduce(
+    (sum, s) => sum + (s.chunk_count || s.chunkCount || 0),
+    0
+  )
+  const totalCorpusTokens = completedSources.reduce(
+    (sum, s) => sum + (s.total_tokens || s.totalTokens || 0),
+    0
+  )
+  const totalCorpusCost = completedSources.reduce(
+    (sum, s) => sum + (s.embedding_cost || s.embeddingCost || 0),
+    0
+  )
+  const formattedTotalCost =
+    totalCorpusCost < 0.00001 && totalCorpusCost > 0
+      ? '<$0.00001'
+      : `$${totalCorpusCost.toFixed(5)}`
+
   return (
     <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       {/* Header with count and Delete All */}
@@ -65,6 +86,46 @@ function SourceDisplay() {
         </Button>
       </Box>
 
+      {/* Total Corpus Cost & Token Banner */}
+      {completedSources.length > 0 && totalCorpusTokens > 0 && (
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 1.25,
+            mb: 1.5,
+            borderRadius: '12px',
+            bgcolor: 'action.hover',
+            borderColor: 'divider',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 0.75,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <MonetizationOnOutlinedIcon sx={{ fontSize: 16, color: 'success.main' }} />
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.73rem' }}>
+              Corpus: {completedSources.length} doc{completedSources.length > 1 ? 's' : ''} • {totalCorpusChunks} chunks • {totalCorpusTokens.toLocaleString()} toks
+            </Typography>
+          </Box>
+          <Tooltip title={`Total embedding expenditure for all documents (${totalCorpusTokens.toLocaleString()} tokens @ $0.02 / 1M tokens)`}>
+            <Chip
+              size="small"
+              label={`Embed: ${formattedTotalCost}`}
+              color="success"
+              variant="outlined"
+              sx={{
+                height: 20,
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                cursor: 'help',
+              }}
+            />
+          </Tooltip>
+        </Paper>
+      )}
+
       <Stack spacing={1.5} sx={{ overflowY: 'auto', flex: 1, pr: 0.5 }}>
         {sources.map((source) => {
           const isProcessing = source.status === 'processing'
@@ -74,6 +135,11 @@ function SourceDisplay() {
           const stepProgress = Math.round(
             (((source.stepIndex ?? 0) + 1) / PROCESSING_STEPS.length) * 100
           )
+
+          const docTokens = source.total_tokens ?? source.totalTokens ?? 0
+          const docCost = source.embedding_cost ?? source.embeddingCost ?? 0
+          const formattedDocCost =
+            docCost < 0.00001 && docCost > 0 ? '<$0.00001' : `$${docCost.toFixed(5)}`
 
           return (
             <Paper
@@ -182,14 +248,45 @@ function SourceDisplay() {
                 </Box>
               )}
 
-              {/* Complete state label */}
+              {/* Complete state metadata & chunk receipt */}
               {isComplete && (
-                <Typography
-                  variant="caption"
-                  sx={{ fontSize: '0.75rem', color: '#137333', fontWeight: 500 }}
-                >
-                  Processing complete
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5, mt: 0.2 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ fontSize: '0.72rem', color: 'text.secondary', fontWeight: 500 }}
+                  >
+                    {source.chunk_count ?? source.chunkCount ?? 0} chunks
+                    {(source.chunk_size || source.chunkSize) && ` • ${source.chunk_size || source.chunkSize} toks`}
+                    {source.overlap !== undefined && ` • ${source.overlap} ovlp`}
+                    {docTokens > 0 && ` • ${docTokens.toLocaleString()} total toks`}
+                  </Typography>
+
+                  {docCost > 0 ? (
+                    <Tooltip title={`${docTokens.toLocaleString()} tokens embedded via text-embedding-3-small ($0.02 / 1M tokens)`}>
+                      <Chip
+                        size="small"
+                        label={formattedDocCost}
+                        variant="outlined"
+                        sx={{
+                          height: 18,
+                          fontSize: '0.65rem',
+                          fontWeight: 600,
+                          color: 'text.secondary',
+                          borderColor: 'divider',
+                          cursor: 'help',
+                          bgcolor: 'action.hover',
+                        }}
+                      />
+                    </Tooltip>
+                  ) : (
+                    <Typography
+                      variant="caption"
+                      sx={{ fontSize: '0.7rem', color: '#137333', fontWeight: 600 }}
+                    >
+                      Ready
+                    </Typography>
+                  )}
+                </Box>
               )}
 
               {/* Error state */}
@@ -201,6 +298,7 @@ function SourceDisplay() {
                   {source.error || 'Upload failed'}
                 </Typography>
               )}
+
             </Paper>
           )
         })}

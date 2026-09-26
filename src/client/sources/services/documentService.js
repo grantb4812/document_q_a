@@ -12,17 +12,28 @@ export async function getDocuments() {
 }
 
 /**
- * Upload a document.
+ * Upload a document with custom or default chunking settings.
  *
  * @param {File} file - The file to upload
- * @param {AbortSignal} [signal] - Optional abort signal
+ * @param {object} [options]
+ * @param {number} [options.chunkSize] - Target tokens per chunk
+ * @param {number} [options.overlap] - Overlapping tokens
+ * @param {AbortSignal} [options.signal] - Optional abort signal
  * @returns {Promise<any>}
  */
-export async function uploadDocument(file, signal) {
+export async function uploadDocument(file, { chunkSize, overlap, signal } = {}) {
   const formData = new FormData()
   formData.append('file', file)
+  if (chunkSize) formData.append('chunkSize', String(chunkSize))
+  if (overlap !== undefined) formData.append('overlap', String(overlap))
 
-  const response = await fetch('api/documents/upload', {
+  const params = new URLSearchParams()
+  if (chunkSize) params.append('chunkSize', String(chunkSize))
+  if (overlap !== undefined) params.append('overlap', String(overlap))
+
+  const url = `api/documents/upload${params.toString() ? `?${params.toString()}` : ''}`
+
+  const response = await fetch(url, {
     method: 'POST',
     body: formData,
     signal,

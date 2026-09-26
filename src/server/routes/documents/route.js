@@ -3,18 +3,34 @@ import { extractDocumentText } from './textExtractor.js'
 import { chunkDocumentPages } from './tokenChunker.js'
 import { generateEmbeddings } from './embeddingService.js'
 import { insertChunk, insertEmbedding } from './chunkHelpers.js'
+import { getAppSettings } from '../../db/settings.js'
 
 let sseConnection = null
 
 export default async function (fastify, opts) {
-  // 1. Get documents
+  // 1. Get documents with chunking settings metadata and corpus totals
   fastify.get('/', async (request, reply) => {
     const documents = db.prepare(
-      'SELECT id, name, type, size, status, chunk_count, created_at FROM documents'
+      'SELECT id, name, type, size, status, chunk_count, chunk_size, overlap, total_tokens, embedding_cost, created_at FROM documents ORDER BY created_at DESC'
     ).all()
+
+    const totalCorpusChunks = documents.reduce((sum, d) => sum + (d.chunk_count || 0), 0)
+    const totalCorpusTokens = documents.reduce((sum, d) => sum + (d.total_tokens || 0), 0)
+    const totalCorpusCost = documents.reduce((sum, d) => sum + (d.embedding_cost || 0), 0)
+
     return {
       message: 'Documents retrieved successfully',
       documents,
+      stats: {
+        totalDocuments: documents.length,
+        totalChunks: totalCorpusChunks,
+        totalTokens: totalCorpusTokens,
+        totalEmbeddingCost: Number(totalCorpusCost.toFixed(8)),
+        formattedTotalCost:
+          totalCorpusCost < 0.00001 && totalCorpusCost > 0
+            ? '<$0.00001'
+            : `$${totalCorpusCost.toFixed(5)}`,
+      },
     }
   })
 
@@ -35,11 +51,15 @@ export default async function (fastify, opts) {
     })
   })
 
-  // 3. Upload document and send processing updates via shared SSE connection
+  // 3. Upload document and process using specific or default chunkSize and overlap
   fastify.post('/upload', async function (request, reply) {
     let filename
     let mimetype
     let buffer
+    let reqChunkSize = null
+    let reqOverlap = null
+
+    const appSettings = getAppSettings()
 
     if (request.isMultipart()) {
       const data = await request.file()
@@ -49,11 +69,32 @@ export default async function (fastify, opts) {
       filename = data.filename
       mimetype = data.mimetype
       buffer = await data.toBuffer()
+
+      // Extract optional chunkSize and overlap from form fields or query string
+      if (data.fields?.chunkSize?.value) {
+        reqChunkSize = Number(data.fields.chunkSize.value)
+      }
+      if (data.fields?.overlap?.value) {
+        reqOverlap = Number(data.fields.overlap.value)
+      }
     } else if (request.body) {
       filename = request.body.name || request.body.filename
       mimetype = request.body.type || request.body.mimetype
       buffer = request.body.blob ? Buffer.from(request.body.blob) : Buffer.from('')
+      reqChunkSize = request.body.chunkSize ? Number(request.body.chunkSize) : null
+      reqOverlap = request.body.overlap ? Number(request.body.overlap) : null
     }
+
+    // Query parameters can also specify chunkSize & overlap
+    if (request.query?.chunkSize) {
+      reqChunkSize = Number(request.query.chunkSize)
+    }
+    if (request.query?.overlap) {
+      reqOverlap = Number(request.query.overlap)
+    }
+
+    const docChunkSize = reqChunkSize && !isNaN(reqChunkSize) ? reqChunkSize : appSettings.chunkSize || 500
+    const docOverlap = reqOverlap !== null && !isNaN(reqOverlap) ? reqOverlap : appSettings.overlap || 50
 
     if (!filename) {
       return reply.code(400).send({ error: 'File is required' })
@@ -68,16 +109,18 @@ export default async function (fastify, opts) {
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
     const size = buffer ? buffer.length : 0
 
-    // Step 0: Save document
+    // Step 0: Save document with chunking settings receipt
     sendEvent({ step: 'Saving document', stepIndex: 0, status: 'processing', filename })
     const insertDocStmt = db.prepare(`
-      INSERT INTO documents (name, type, size, status, chunk_count, blob, created_at)
-      VALUES (?, ?, ?, 'processing', 0, ?, datetime('now'))
+      INSERT INTO documents (name, type, size, status, chunk_count, chunk_size, overlap, total_tokens, embedding_cost, blob, created_at)
+      VALUES (?, ?, ?, 'processing', 0, ?, ?, 0, 0, ?, datetime('now'))
     `)
     const result = insertDocStmt.run(
       filename,
       mimetype || 'application/octet-stream',
       size,
+      docChunkSize,
+      docOverlap,
       buffer || Buffer.from('')
     )
     const documentId = Number(result.lastInsertRowid)
@@ -89,12 +132,16 @@ export default async function (fastify, opts) {
       // Step 1: Extract text
       const pages = await extractDocumentText(buffer, mimetype, filename)
 
-      // Step 2: Chunk document
+      // Step 2: Chunk document using configured chunkSize and overlap
       sendEvent({ step: 'Chunking document', stepIndex: 1, status: 'processing', id: documentId, filename })
       const chunks = chunkDocumentPages(pages, {
-        targetTokens: 500,
-        overlapTokens: 50,
+        targetTokens: docChunkSize,
+        overlapTokens: docOverlap,
       })
+
+      // Calculate total tokens and embedding cost for this document ($0.02 / 1M tokens)
+      const totalTokens = chunks.reduce((sum, item) => sum + (item.tokenCount || 0), 0)
+      const embeddingCost = Number((totalTokens * 0.00000002).toFixed(8))
 
       // Persist chunks
       const chunkRecords = []
@@ -125,6 +172,8 @@ export default async function (fastify, opts) {
         id: documentId,
         filename,
         chunkCount: chunkRecords.length,
+        totalTokens,
+        embeddingCost,
       })
       const chunkTexts = chunkRecords.map((c) => c.text)
       const vectors = await generateEmbeddings(chunkTexts)
@@ -147,9 +196,9 @@ export default async function (fastify, opts) {
       // Step 4: Complete
       db.prepare(`
         UPDATE documents
-        SET status = 'complete', chunk_count = ?
+        SET status = 'complete', chunk_count = ?, total_tokens = ?, embedding_cost = ?
         WHERE id = ?
-      `).run(chunkRecords.length, documentId)
+      `).run(chunkRecords.length, totalTokens, embeddingCost, documentId)
 
       sendEvent({
         step: 'Complete',
@@ -158,12 +207,20 @@ export default async function (fastify, opts) {
         id: documentId,
         filename,
         chunkCount: chunkRecords.length,
+        chunkSize: docChunkSize,
+        overlap: docOverlap,
+        totalTokens,
+        embeddingCost,
       })
 
       return reply.send({
         message: 'Document uploaded and processed successfully',
         id: documentId,
         chunkCount: chunkRecords.length,
+        chunkSize: docChunkSize,
+        overlap: docOverlap,
+        totalTokens,
+        embeddingCost,
       })
     } catch (error) {
       db.prepare(`

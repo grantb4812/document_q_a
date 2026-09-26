@@ -1,5 +1,7 @@
-import { Paper, InputBase, IconButton } from '@mui/material'
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import { Paper } from '@mui/material'
+import ChatHeader from './components/ChatHeader'
+import ChatMessageList from './components/ChatMessageList'
+import ChatInput from './components/ChatInput'
 
 function Chat() {
   return (
@@ -9,50 +11,24 @@ function Chat() {
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'flex-end',
         p: 2.5,
         borderRadius: '24px',
         bgcolor: 'background.paper',
+        minHeight: 0,
+        overflow: 'hidden',
       }}
     >
-      <Paper
-        variant="outlined"
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          borderRadius: '28px',
-          borderColor: 'divider',
-          pl: 2.5,
-          pr: 1,
-          py: 0.8,
-          bgcolor: 'background.paper',
-        }}
-      >
-        <InputBase
-          placeholder="Ask a question or create something"
-          fullWidth
-          sx={{
-            fontSize: '0.95rem',
-            color: 'text.primary',
-            '& ::placeholder': {
-              color: 'text.disabled',
-              opacity: 1,
-            },
-          }}
-        />
-        <IconButton
-          size="small"
-          sx={{
-            bgcolor: 'action.hover',
-            color: 'text.secondary',
-            '&:hover': { bgcolor: 'action.selected' },
-          }}
-        >
-          <ArrowForwardIcon fontSize="small" />
-        </IconButton>
-      </Paper>
+      {/* 1. Header with title, message count badge, and Clear Chat button */}
+      <ChatHeader />
+
+      {/* 2. Scrollable Message List */}
+      <ChatMessageList />
+
+      {/* 3. Chat Input Bar */}
+      <ChatInput />
     </Paper>
   )
 }
 
 export default Chat
+

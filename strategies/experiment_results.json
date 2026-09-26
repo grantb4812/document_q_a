@@ -1,0 +1,287 @@
+[
+  {
+    "config": {
+      "id": "EXP-200-0",
+      "chunkSize": 200,
+      "overlap": 0,
+      "label": "Micro-Chunks (200t, 0 ovlp)"
+    },
+    "chunkCount": 8,
+    "totalDocTokens": 1439,
+    "embeddingCost": 0.000028780000000000002,
+    "queryEvaluations": [
+      {
+        "queryId": "Q1_CAVEAT",
+        "queryText": "Under what specific condition is the SLA uptime guarantee reduced from 99.99% to 99.50%?",
+        "top1Score": 0.7981,
+        "top1Snippet": "# Global Enterprise Cloud Operations & Service Agreement (GEC-2026)  ## Section ...",
+        "top3Tokens": 439,
+        "promptCostTop3": 0.00006585,
+        "inTop1": true,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      },
+      {
+        "queryId": "Q2_NEEDLE",
+        "queryText": "What is the specific regulatory audit compliance code for biometric credential verification?",
+        "top1Score": 0.9444,
+        "top1Snippet": " Total cluster CPU utilization exceeds 92% continuously for more than 4 consecut...",
+        "top3Tokens": 439,
+        "promptCostTop3": 0.00006585,
+        "inTop1": false,
+        "inTop3": false,
+        "answer": "Simulated response..."
+      },
+      {
+        "queryId": "Q3_SEAM",
+        "queryText": "What are the refund eligibility criteria and under what exact circumstances is refund eligibility completely voided?",
+        "top1Score": 0.9991,
+        "top1Snippet": " a flat rate of $0.045 per gigabyte. - Ingress traffic is 100% complimentary acr...",
+        "top3Tokens": 600,
+        "promptCostTop3": 0.00008999999999999999,
+        "inTop1": false,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      },
+      {
+        "queryId": "Q4_TABLE",
+        "queryText": "What is the dedicated bandwidth and monthly seat rate for the Tier-3 Platinum plan?",
+        "top1Score": 0.9914,
+        "top1Snippet": " the initial invoice delivery date. To be eligible for an enterprise refund, the...",
+        "top3Tokens": 600,
+        "promptCostTop3": 0.00008999999999999999,
+        "inTop1": false,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      }
+    ]
+  },
+  {
+    "config": {
+      "id": "EXP-200-50",
+      "chunkSize": 200,
+      "overlap": 50,
+      "label": "Micro-Chunks with Overlap (200t, 50 ovlp)"
+    },
+    "chunkCount": 10,
+    "totalDocTokens": 1889,
+    "embeddingCost": 0.00003778,
+    "queryEvaluations": [
+      {
+        "queryId": "Q1_CAVEAT",
+        "queryText": "Under what specific condition is the SLA uptime guarantee reduced from 99.99% to 99.50%?",
+        "top1Score": 0.7981,
+        "top1Snippet": "# Global Enterprise Cloud Operations & Service Agreement (GEC-2026)  ## Section ...",
+        "top3Tokens": 489,
+        "promptCostTop3": 0.00007335,
+        "inTop1": true,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      },
+      {
+        "queryId": "Q2_NEEDLE",
+        "queryText": "What is the specific regulatory audit compliance code for biometric credential verification?",
+        "top1Score": 0.7284,
+        "top1Snippet": "icing & Contract Refund Policies  Customers subscribing to Enterprise Multi-Tena...",
+        "top3Tokens": 489,
+        "promptCostTop3": 0.00007335,
+        "inTop1": false,
+        "inTop3": false,
+        "answer": "Simulated response..."
+      },
+      {
+        "queryId": "Q3_SEAM",
+        "queryText": "What are the refund eligibility criteria and under what exact circumstances is refund eligibility completely voided?",
+        "top1Score": 0.9991,
+        "top1Snippet": " a flat rate of $0.045 per gigabyte. - Ingress traffic is 100% complimentary acr...",
+        "top3Tokens": 600,
+        "promptCostTop3": 0.00008999999999999999,
+        "inTop1": false,
+        "inTop3": false,
+        "answer": "Simulated response..."
+      },
+      {
+        "queryId": "Q4_TABLE",
+        "queryText": "What is the dedicated bandwidth and monthly seat rate for the Tier-3 Platinum plan?",
+        "top1Score": 0.9745,
+        "top1Snippet": " a flat rate of $0.045 per gigabyte. - Ingress traffic is 100% complimentary acr...",
+        "top3Tokens": 600,
+        "promptCostTop3": 0.00008999999999999999,
+        "inTop1": false,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      }
+    ]
+  },
+  {
+    "config": {
+      "id": "EXP-500-50",
+      "chunkSize": 500,
+      "overlap": 50,
+      "label": "Baseline (500t, 50 ovlp)"
+    },
+    "chunkCount": 4,
+    "totalDocTokens": 1589,
+    "embeddingCost": 0.000031780000000000004,
+    "queryEvaluations": [
+      {
+        "queryId": "Q1_CAVEAT",
+        "queryText": "Under what specific condition is the SLA uptime guarantee reduced from 99.99% to 99.50%?",
+        "top1Score": 0.9496,
+        "top1Snippet": ". - Total provisioned compute and storage consumption must remain strictly under...",
+        "top3Tokens": 1089,
+        "promptCostTop3": 0.00016334999999999999,
+        "inTop1": false,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      },
+      {
+        "queryId": "Q2_NEEDLE",
+        "queryText": "What is the specific regulatory audit compliance code for biometric credential verification?",
+        "top1Score": 0.9998,
+        "top1Snippet": " & Bandwidth Allocations  The following service tier matrix defines the resource...",
+        "top3Tokens": 1089,
+        "promptCostTop3": 0.00016334999999999999,
+        "inTop1": false,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      },
+      {
+        "queryId": "Q3_SEAM",
+        "queryText": "What are the refund eligibility criteria and under what exact circumstances is refund eligibility completely voided?",
+        "top1Score": 0.1191,
+        "top1Snippet": " & Bandwidth Allocations  The following service tier matrix defines the resource...",
+        "top3Tokens": 1089,
+        "promptCostTop3": 0.00016334999999999999,
+        "inTop1": false,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      },
+      {
+        "queryId": "Q4_TABLE",
+        "queryText": "What is the dedicated bandwidth and monthly seat rate for the Tier-3 Platinum plan?",
+        "top1Score": 0.2977,
+        "top1Snippet": " & Bandwidth Allocations  The following service tier matrix defines the resource...",
+        "top3Tokens": 1089,
+        "promptCostTop3": 0.00016334999999999999,
+        "inTop1": true,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      }
+    ]
+  },
+  {
+    "config": {
+      "id": "EXP-2000-0",
+      "chunkSize": 2000,
+      "overlap": 0,
+      "label": "Macro-Chunks (2000t, 0 ovlp)"
+    },
+    "chunkCount": 1,
+    "totalDocTokens": 1439,
+    "embeddingCost": 0.000028780000000000002,
+    "queryEvaluations": [
+      {
+        "queryId": "Q1_CAVEAT",
+        "queryText": "Under what specific condition is the SLA uptime guarantee reduced from 99.99% to 99.50%?",
+        "top1Score": -0.9991,
+        "top1Snippet": "# Global Enterprise Cloud Operations & Service Agreement (GEC-2026)  ## Section ...",
+        "top3Tokens": 1439,
+        "promptCostTop3": 0.00021585,
+        "inTop1": true,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      },
+      {
+        "queryId": "Q2_NEEDLE",
+        "queryText": "What is the specific regulatory audit compliance code for biometric credential verification?",
+        "top1Score": 0.2596,
+        "top1Snippet": "# Global Enterprise Cloud Operations & Service Agreement (GEC-2026)  ## Section ...",
+        "top3Tokens": 1439,
+        "promptCostTop3": 0.00021585,
+        "inTop1": true,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      },
+      {
+        "queryId": "Q3_SEAM",
+        "queryText": "What are the refund eligibility criteria and under what exact circumstances is refund eligibility completely voided?",
+        "top1Score": 0.9923,
+        "top1Snippet": "# Global Enterprise Cloud Operations & Service Agreement (GEC-2026)  ## Section ...",
+        "top3Tokens": 1439,
+        "promptCostTop3": 0.00021585,
+        "inTop1": true,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      },
+      {
+        "queryId": "Q4_TABLE",
+        "queryText": "What is the dedicated bandwidth and monthly seat rate for the Tier-3 Platinum plan?",
+        "top1Score": 0.9983,
+        "top1Snippet": "# Global Enterprise Cloud Operations & Service Agreement (GEC-2026)  ## Section ...",
+        "top3Tokens": 1439,
+        "promptCostTop3": 0.00021585,
+        "inTop1": true,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      }
+    ]
+  },
+  {
+    "config": {
+      "id": "EXP-2000-200",
+      "chunkSize": 2000,
+      "overlap": 200,
+      "label": "Macro-Chunks with Overlap (2000t, 200 ovlp)"
+    },
+    "chunkCount": 1,
+    "totalDocTokens": 1439,
+    "embeddingCost": 0.000028780000000000002,
+    "queryEvaluations": [
+      {
+        "queryId": "Q1_CAVEAT",
+        "queryText": "Under what specific condition is the SLA uptime guarantee reduced from 99.99% to 99.50%?",
+        "top1Score": -0.9991,
+        "top1Snippet": "# Global Enterprise Cloud Operations & Service Agreement (GEC-2026)  ## Section ...",
+        "top3Tokens": 1439,
+        "promptCostTop3": 0.00021585,
+        "inTop1": true,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      },
+      {
+        "queryId": "Q2_NEEDLE",
+        "queryText": "What is the specific regulatory audit compliance code for biometric credential verification?",
+        "top1Score": 0.2596,
+        "top1Snippet": "# Global Enterprise Cloud Operations & Service Agreement (GEC-2026)  ## Section ...",
+        "top3Tokens": 1439,
+        "promptCostTop3": 0.00021585,
+        "inTop1": true,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      },
+      {
+        "queryId": "Q3_SEAM",
+        "queryText": "What are the refund eligibility criteria and under what exact circumstances is refund eligibility completely voided?",
+        "top1Score": 0.9923,
+        "top1Snippet": "# Global Enterprise Cloud Operations & Service Agreement (GEC-2026)  ## Section ...",
+        "top3Tokens": 1439,
+        "promptCostTop3": 0.00021585,
+        "inTop1": true,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      },
+      {
+        "queryId": "Q4_TABLE",
+        "queryText": "What is the dedicated bandwidth and monthly seat rate for the Tier-3 Platinum plan?",
+        "top1Score": 0.9983,
+        "top1Snippet": "# Global Enterprise Cloud Operations & Service Agreement (GEC-2026)  ## Section ...",
+        "top3Tokens": 1439,
+        "promptCostTop3": 0.00021585,
+        "inTop1": true,
+        "inTop3": true,
+        "answer": "Simulated response..."
+      }
+    ]
+  }
+]

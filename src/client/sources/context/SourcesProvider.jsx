@@ -65,7 +65,7 @@ export function SourcesProvider({ children }) {
     }
   }, [loadDocuments])
 
-  const handleUploadDocument = useCallback(async (file) => {
+  const handleUploadDocument = useCallback(async (file, options = {}) => {
     if (!file) return
 
     dispatch({
@@ -78,11 +78,13 @@ export function SourcesProvider({ children }) {
         status: 'processing',
         currentStep: 'Saving document',
         stepIndex: 0,
+        chunk_size: options.chunkSize,
+        overlap: options.overlap,
       },
     })
 
     try {
-      await uploadDocument(file)
+      await uploadDocument(file, options)
     } catch (err) {
       console.error('[SourcesContext] Upload failed:', err)
       dispatch({
@@ -91,6 +93,7 @@ export function SourcesProvider({ children }) {
       })
     }
   }, [])
+
 
   const handleDeleteDocument = useCallback(async (id) => {
     if (!id) return

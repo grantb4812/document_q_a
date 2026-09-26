@@ -7,6 +7,9 @@ import fastifyMultipart from "@fastify/multipart";
 import fastifyStatic from "@fastify/static";
 import autoLoad from "@fastify/autoload";
 
+//initialize the database
+import "./db/init.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
