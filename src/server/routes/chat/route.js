@@ -1,13 +1,13 @@
-import db from '../../db/connection.js'
+import db from '../../db.js'
 import { generateEmbeddings, getOpenAIClient } from '../documents/embeddingService.js'
 import { countTokens } from '../documents/tokenChunker.js'
-import { getAppSettings } from '../../db/settings.js'
+import { getAppSettings } from '../settings/settingsHelper.js'
 import {
   saveMessage,
   getRecentMessagesWithTokenBudget,
   getAllMessages,
   clearMessages,
-} from '../../db/messages.js'
+} from './messagesHelper.js'
 
 let sseConnection = null
 

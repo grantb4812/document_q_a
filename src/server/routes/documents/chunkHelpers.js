@@ -1,4 +1,4 @@
-import db from '../../db/connection.js'
+import db from '../../db.js'
 
 export const EMBEDDING_DIMENSION = 1536 // Default dimension for OpenAI text-embedding-3-small and text-embedding-ada-002
 

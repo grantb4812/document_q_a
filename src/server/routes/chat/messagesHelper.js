@@ -1,33 +1,4 @@
-import db from './connection.js'
-
-export default function messages() {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS messages (
-      id TEXT PRIMARY KEY,
-      conversation_id TEXT NOT NULL DEFAULT 'default',
-      role TEXT NOT NULL CHECK(role IN ('user', 'assistant', 'system')),
-      content TEXT NOT NULL,
-      retrieved_chunks TEXT,
-      token_count INTEGER NOT NULL DEFAULT 0,
-      metrics TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_messages_conv_created ON messages(conversation_id, created_at);
-  `)
-
-  // Migration: ensure metrics column exists if table was created previously
-  try {
-    const tableInfo = db.prepare(`PRAGMA table_info(messages)`).all()
-    const colNames = tableInfo.map((c) => c.name)
-
-    if (!colNames.includes('metrics')) {
-      db.exec(`ALTER TABLE messages ADD COLUMN metrics TEXT`)
-    }
-  } catch (err) {
-    console.warn('[messages/db] Migration check warning:', err.message)
-  }
-}
+import db from '../../db.js'
 
 /**
  * Save a message to the database

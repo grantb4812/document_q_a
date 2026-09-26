@@ -1,9 +1,9 @@
-import db from '../../db/connection.js'
+import db from '../../db.js'
 import { extractDocumentText } from './textExtractor.js'
 import { chunkDocumentPages } from './tokenChunker.js'
 import { generateEmbeddings } from './embeddingService.js'
 import { insertChunk, insertEmbedding } from './chunkHelpers.js'
-import { getAppSettings } from '../../db/settings.js'
+import { getAppSettings } from '../settings/settingsHelper.js'
 
 let sseConnection = null
 

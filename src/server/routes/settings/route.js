@@ -1,4 +1,4 @@
-import { getAppSettings, updateAppSettings } from '../../db/settings.js'
+import { getAppSettings, updateAppSettings } from './settingsHelper.js'
 
 export default async function (fastify, opts) {
   // 1. Get settings from SQLite

@@ -8,8 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "server": " node --watch-path=./src/server ./src/server/main.js",
-    "db:init": "node ./src/server/db/init.js",
+    "server": "node --watch-path=./src/server ./src/server/main.js",
+    "db:init": "node -e \"import('./src/server/db.js')\"",
     "dev": "concurrently \"npm run client\" \"npm run server\""
   },
   "dependencies": {
