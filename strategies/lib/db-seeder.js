@@ -5,7 +5,7 @@ import crypto from 'node:crypto'
 import db from '../../src/server/db.js'
 import { extractDocumentText } from '../../src/server/routes/documents/textExtractor.js'
 import { chunkDocumentPages, countTokens } from '../../src/server/routes/documents/tokenChunker.js'
-import { generateEmbeddings } from '../../src/server/routes/documents/embeddingService.js'
+import { generateEmbeddings, getOpenAIClient } from '../../src/server/routes/documents/embeddingService.js'
 import { insertChunk, insertEmbedding } from '../../src/server/routes/documents/chunkHelpers.js'
 import { saveMessage } from '../../src/server/routes/chat/messagesHelper.js'
 
@@ -160,39 +160,226 @@ export async function seedCorpusDocument({
 }
 
 /**
- * Seed evaluation Q&A pairs directly into the messages table for instant UI inspection.
+ * Executes a real end-to-end Chat QA turn against the SQLite vector database with full
+ * telemetry capture (TTFT, prefill latency, generation latency, phase durations, tokens, and cost).
+ * Automatically saves both user and assistant messages to SQLite for immediate UI rendering.
  *
  * @param {object} options
- * @param {string} [options.conversationId]
- * @param {Array<{ query: string, answer: string, retrievedChunks?: Array, metrics?: object }>} options.qaPairs
+ * @param {string} options.query - User question text
+ * @param {string} [options.conversationId] - Target conversation ID
+ * @param {number} [options.topK] - Retrieval depth
+ * @param {string} [options.model] - Model name (e.g., 'gpt-4o-mini')
+ * @returns {Promise<object>} Complete turn result with metrics and retrieved chunks
  */
-export function seedEvaluationMessages({ conversationId = 'default', qaPairs = [] } = {}) {
-  const seedTx = db.transaction(() => {
-    for (const qa of qaPairs) {
-      const userMsgId = `exp-user-${crypto.randomUUID()}`
-      const assistantMsgId = `exp-asst-${crypto.randomUUID()}`
+export async function executeEndToEndChatTurn({
+  query,
+  conversationId = 'default',
+  topK = 5,
+  model = 'gpt-4o-mini',
+}) {
+  const serverStartTime = performance.now()
+  const trimmedMessage = query.trim()
+  const userMsgId = `exp-user-${crypto.randomUUID()}`
+  const assistantMsgId = `exp-asst-${crypto.randomUUID()}`
 
-      // Save user question
-      saveMessage({
-        id: userMsgId,
-        conversationId,
-        role: 'user',
-        content: qa.query,
-        tokenCount: countTokens(qa.query),
-      })
-
-      // Save assistant answer with retrieved chunks and evaluation metrics
-      saveMessage({
-        id: assistantMsgId,
-        conversationId,
-        role: 'assistant',
-        content: qa.answer || 'No answer generated.',
-        retrievedChunks: qa.retrievedChunks || [],
-        tokenCount: countTokens(qa.answer || ''),
-        metrics: qa.metrics || null,
-      })
-    }
+  // Step 1: Count user tokens and save user message
+  const userTokens = countTokens(trimmedMessage)
+  saveMessage({
+    id: userMsgId,
+    conversationId,
+    role: 'user',
+    content: trimmedMessage,
+    tokenCount: userTokens,
   })
 
-  seedTx()
+  // Step 2: Embed user query
+  const embedStartTime = performance.now()
+  const [queryVector] = await generateEmbeddings([trimmedMessage])
+  const embedDurationMs = Math.round(performance.now() - embedStartTime)
+
+  // Step 3: Vector retrieval via sqlite-vec
+  let retrievedChunks = []
+  let vecDurationMs = 0
+  if (queryVector) {
+    const vecStartTime = performance.now()
+    const floatArray = queryVector instanceof Float32Array ? queryVector : new Float32Array(queryVector)
+    const stmt = db.prepare(`
+      SELECT 
+        c.id,
+        c.document_id AS documentId,
+        d.name AS documentName,
+        c.chunk_index AS chunkIndex,
+        c.text,
+        c.start,
+        c.end,
+        c.page,
+        c.token_count AS tokenCount,
+        vec_distance_cosine(e.vector, ?) AS distance
+      FROM embeddings e
+      JOIN chunks c ON c.id = e.chunk_id
+      LEFT JOIN documents d ON d.id = c.document_id
+      ORDER BY distance ASC
+      LIMIT ?
+    `)
+    const rows = stmt.all(floatArray, topK)
+    vecDurationMs = Math.round(performance.now() - vecStartTime)
+
+    retrievedChunks = rows.map((r) => {
+      const dist = typeof r.distance === 'number' ? r.distance : 0.5
+      const score = Math.max(0, Math.min(1, 1 - dist))
+      return {
+        id: r.id,
+        documentId: r.documentId,
+        documentName: r.documentName,
+        chunkIndex: r.chunkIndex,
+        text: r.text,
+        page: r.page,
+        tokenCount: r.tokenCount,
+        distance: Number(dist.toFixed(4)),
+        score: Number(score.toFixed(2)),
+      }
+    })
+  }
+
+  // Step 4: Construct formatted RAG prompt matching production chat route
+  const promptPrepStartTime = performance.now()
+  let contextText = ''
+  if (retrievedChunks.length > 0) {
+    contextText = retrievedChunks
+      .map((chunk, i) => {
+        const docName = chunk.documentName || `Document #${chunk.documentId || i + 1}`
+        const pageInfo = chunk.page ? ` | Page: ${chunk.page}` : ''
+        const chunkNum = chunk.chunkIndex !== undefined ? ` | Chunk: #${chunk.chunkIndex + 1}` : ''
+        return `[Source ${i + 1}] Document: "${docName}"${pageInfo}${chunkNum}\nContent:\n"""\n${chunk.text}\n"""`
+      })
+      .join('\n\n')
+  }
+
+  const systemPrompt = `You are a helpful, precise AI assistant for a Document Q&A application.
+Your goal is to answer the user's question accurately using ONLY the provided retrieved context sources below.
+
+Guidelines:
+1. Base your answers strictly on the context provided. Do not fabricate information.
+2. If the answer cannot be determined or found in the provided context or prior conversation, clearly state: "I could not find information about that in the uploaded documents."
+3. Cite your sources inline using the source number or document name (e.g., [Source 1] or [${retrievedChunks[0]?.documentName || 'Document'}, Page X]) when making factual claims.
+4. Format your response cleanly using Markdown (bold text, bullet points, code blocks where appropriate).
+
+Retrieved Context Sources:
+${contextText || '(No relevant document context found in the database for this query.)'}`
+
+  const apiMessages = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: trimmedMessage },
+  ]
+
+  const promptInputTokens = apiMessages.reduce(
+    (sum, msg) => sum + countTokens(msg.content) + 4,
+    0
+  )
+  const promptPrepDurationMs = Math.round(performance.now() - promptPrepStartTime)
+
+  // Step 5: Call LLM with streaming to capture precise TTFT
+  const openai = getOpenAIClient()
+  let fullResponse = ''
+  let firstTokenTimestamp = null
+  const streamStartTime = performance.now()
+
+  if (openai) {
+    const stream = await openai.chat.completions.create({
+      model,
+      messages: apiMessages,
+      temperature: 0.2,
+      max_completion_tokens: 2048,
+      stream: true,
+    })
+
+    for await (const part of stream) {
+      const content = part.choices[0]?.delta?.content || ''
+      if (content) {
+        if (!firstTokenTimestamp) {
+          firstTokenTimestamp = performance.now()
+        }
+        fullResponse += content
+      }
+    }
+  } else {
+    // Offline / Demo fallback
+    firstTokenTimestamp = performance.now() + 35
+    fullResponse = retrievedChunks.length > 0
+      ? `Based on the retrieved sources:\n\n${retrievedChunks[0].text.slice(0, 300)}...`
+      : 'I could not find information about that in the uploaded documents.'
+  }
+
+  const streamEndTime = performance.now()
+  const assistantTokens = countTokens(fullResponse)
+  const totalTokens = promptInputTokens + assistantTokens
+
+  // Latency metrics (exact ms)
+  const serverTtftMs = firstTokenTimestamp
+    ? Math.round(firstTokenTimestamp - serverStartTime)
+    : Math.round(streamEndTime - serverStartTime)
+  const totalServerDurationMs = Math.round(streamEndTime - serverStartTime)
+  const prefillDurationMs = firstTokenTimestamp
+    ? Math.round(firstTokenTimestamp - streamStartTime)
+    : 0
+  const generationDurationMs = firstTokenTimestamp
+    ? Math.round(streamEndTime - firstTokenTimestamp)
+    : Math.round(streamEndTime - streamStartTime)
+
+  // Pricing Model
+  const EMBED_COST_PER_TOKEN = 0.00000002
+  const PROMPT_COST_PER_TOKEN = 0.00000015
+  const COMPLETION_COST_PER_TOKEN = 0.0000006
+
+  const embedCost = userTokens * EMBED_COST_PER_TOKEN
+  const promptCost = promptInputTokens * PROMPT_COST_PER_TOKEN
+  const completionCost = assistantTokens * COMPLETION_COST_PER_TOKEN
+  const totalCost = embedCost + promptCost + completionCost
+  const formattedCost = totalCost < 0.00001 ? '<$0.00001' : `$${totalCost.toFixed(5)}`
+
+  const metrics = {
+    ttftMs: serverTtftMs,
+    totalDurationMs: totalServerDurationMs,
+    serverPhases: {
+      embeddingMs: embedDurationMs,
+      vectorSearchMs: vecDurationMs,
+      promptPrepMs: promptPrepDurationMs,
+      prefillMs: prefillDurationMs,
+      generationMs: generationDurationMs,
+    },
+    tokens: {
+      embedding: userTokens,
+      prompt: promptInputTokens,
+      completion: assistantTokens,
+      total: totalTokens,
+    },
+    cost: {
+      embedding: Number(embedCost.toFixed(8)),
+      prompt: Number(promptCost.toFixed(8)),
+      completion: Number(completionCost.toFixed(8)),
+      total: Number(totalCost.toFixed(8)),
+      formatted: formattedCost,
+    },
+    model: openai ? model : 'demo-mode',
+  }
+
+  // Step 6: Save assistant message with full metrics and retrieved chunks
+  saveMessage({
+    id: assistantMsgId,
+    conversationId,
+    role: 'assistant',
+    content: fullResponse,
+    retrievedChunks,
+    tokenCount: assistantTokens,
+    metrics,
+  })
+
+  return {
+    userMessageId: userMsgId,
+    assistantMessageId: assistantMsgId,
+    query: trimmedMessage,
+    answer: fullResponse,
+    retrievedChunks,
+    metrics,
+  }
 }

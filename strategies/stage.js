@@ -1,9 +1,12 @@
 import 'dotenv/config'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { clearDatabase, updateSettings, seedCorpusDocument, seedEvaluationMessages } from './lib/db-seeder.js'
-import { getOpenAIClient, generateEmbeddings } from '../src/server/routes/documents/embeddingService.js'
-import db from '../src/server/db.js'
+import {
+  clearDatabase,
+  updateSettings,
+  seedCorpusDocument,
+  executeEndToEndChatTurn,
+} from './lib/db-seeder.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const defaultCorpusPath = path.join(__dirname, 'corpora/policy-operations.md')
@@ -31,74 +34,6 @@ const EVAL_QUERIES = [
     targetFact: '5 minutes RPO, 30 minutes RTO, purged using DoD 5220.22-M on day 31',
   },
 ]
-
-async function queryTopKChunks(queryVector, topK = 5) {
-  const queryBlob = new Float32Array(queryVector)
-  const stmt = db.prepare(`
-    SELECT
-      c.id,
-      c.document_id AS documentId,
-      c.chunk_index AS chunkIndex,
-      c.text,
-      c.page,
-      c.token_count AS tokenCount,
-      vec_distance_cosine(e.vector, ?) AS distance
-    FROM embeddings e
-    JOIN chunks c ON c.id = e.chunk_id
-    ORDER BY distance ASC
-    LIMIT ?
-  `)
-  const rows = stmt.all(queryBlob, topK)
-  return rows.map((r) => ({
-    id: r.id,
-    chunkIndex: r.chunkIndex,
-    text: r.text,
-    page: r.page,
-    tokenCount: r.tokenCount,
-    similarity: Number((1 - r.distance).toFixed(4)),
-    distance: Number(r.distance.toFixed(4)),
-  }))
-}
-
-async function generateAnswerWithContext(query, retrievedChunks) {
-  const openai = getOpenAIClient()
-  const contextBlock = retrievedChunks
-    .map((c, i) => `[Source ${i + 1} - Page ${c.page || 1}]:\n${c.text}`)
-    .join('\n\n---\n\n')
-
-  if (!openai) {
-    // Fallback response with retrieved evidence summary for offline / API-keyless testing
-    return {
-      answer: `Based on the retrieved policy document chunks (top ${retrievedChunks.length} sources):\n\n${retrievedChunks[0]?.text?.slice(0, 300)}...`,
-      latencyMs: 15,
-      promptTokens: 250,
-      completionTokens: 80,
-    }
-  }
-
-  const systemPrompt = `You are a precise corporate policy assistant. Answer the user question strictly using the provided context chunks. If the answer is not supported by context, state clearly that the policy does not specify it.`
-  const userPrompt = `Context:\n${contextBlock}\n\nQuestion: ${query}\n\nPlease provide a clear, accurate, and concise answer.`
-
-  const startMs = Date.now()
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ],
-    temperature: 0,
-    max_tokens: 400,
-  })
-  const latencyMs = Date.now() - startMs
-  const answer = response.choices[0]?.message?.content || ''
-
-  return {
-    answer,
-    latencyMs,
-    promptTokens: response.usage?.prompt_tokens || 0,
-    completionTokens: response.usage?.completion_tokens || 0,
-  }
-}
 
 async function main() {
   const args = process.argv.slice(2)
@@ -146,44 +81,34 @@ async function main() {
   console.log(`    ✓ Total Tokens   : ${ingestion.totalTokens}`)
   console.log(`    ✓ Embedding Cost : $${ingestion.embeddingCost.toFixed(6)}`)
 
-  // 4. Seed evaluation messages
+  // 4. Execute live end-to-end chat queries with streaming & TTFT telemetry
   if (!skipChat) {
-    console.log('💬 [4/4] Executing benchmark queries and seeding chat history...')
-    const queryEmbeddings = await generateEmbeddings(EVAL_QUERIES.map((q) => q.query))
-    const qaPairs = []
+    console.log('💬 [4/4] Executing real end-to-end streaming chat queries with TTFT capture...')
 
     for (let i = 0; i < EVAL_QUERIES.length; i++) {
       const q = EVAL_QUERIES[i]
-      const qVec = queryEmbeddings[i]
-      const retrieved = await queryTopKChunks(qVec, topKArg)
-      const genResult = await generateAnswerWithContext(q.query, retrieved)
-
-      console.log(`    ✓ Evaluated: "${q.query.slice(0, 55)}..." (Latency: ${genResult.latencyMs}ms)`)
-
-      qaPairs.push({
+      const turnResult = await executeEndToEndChatTurn({
         query: q.query,
-        answer: genResult.answer,
-        retrievedChunks: retrieved,
-        metrics: {
-          experimentId: expArg,
-          latencyMs: genResult.latencyMs,
-          promptTokens: genResult.promptTokens,
-          completionTokens: genResult.completionTokens,
-          topK: topKArg,
-          topSimilarity: retrieved[0]?.similarity || 0,
-        },
+        conversationId: 'default',
+        topK: topKArg,
+        model: 'gpt-4o-mini',
       })
+
+      const m = turnResult.metrics
+      console.log(`\n  📌 Query ${i + 1}: "${q.query}"`)
+      console.log(`     ⚡ TTFT: ${m.ttftMs}ms | Total: ${m.totalDurationMs}ms | Tokens: ${m.tokens.total} (Prompt: ${m.tokens.prompt}, Output: ${m.tokens.completion}) | Cost: ${m.cost.formatted}`)
+      console.log(`     🔎 Server Phases: Embed: ${m.serverPhases.embeddingMs}ms | VecSearch: ${m.serverPhases.vectorSearchMs}ms | Prefill: ${m.serverPhases.prefillMs}ms | Gen: ${m.serverPhases.generationMs}ms`)
+      console.log(`     📚 Sources Retrieved: ${turnResult.retrievedChunks.length} chunks (Top score: ${turnResult.retrievedChunks[0]?.score || 'N/A'})`)
     }
 
-    seedEvaluationMessages({ conversationId: 'default', qaPairs })
-    console.log(`    ✓ Seeded ${qaPairs.length} Q&A evaluation dialogues into chat history.`)
+    console.log(`\n    ✓ Seeded ${EVAL_QUERIES.length} real Q&A evaluation dialogues with complete TTFT & metrics.`)
   } else {
     console.log('⏭️  [4/4] Skipping chat seeding (--no-chat flag).')
   }
 
   console.log('='.repeat(80))
   console.log('✨ STAGING COMPLETE! Live database is ready.')
-  console.log('👀 Open http://localhost:5173 or http://localhost:3000 to inspect the document, chunks, and chat.')
+  console.log('👀 Open http://localhost:5173 or http://localhost:3000 to inspect the document, chunks, and TTFT badge.')
   console.log('='.repeat(80))
 }
 
