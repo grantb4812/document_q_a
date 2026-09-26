@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { runSideBySideComparison } from '../../../../strategies/lib/comparison-runner.js'
+import { runAllExperiments, runChunkSizeComparison, runTopKComparison } from '../../../../strategies/lib/comparison-runner.js'
 import { generateHtmlReport } from '../../../../strategies/generate-comparison.js'
 import {
   clearDatabase,
@@ -11,20 +11,21 @@ import {
 } from '../../../../strategies/lib/db-seeder.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const dataFilePath = path.resolve(__dirname, '../../../../strategies/data/comparison-results.json')
+const labDataPath = path.resolve(__dirname, '../../../../strategies/data/lab-experiments.json')
+const legacyDataPath = path.resolve(__dirname, '../../../../strategies/data/comparison-results.json')
 const corpusPath = path.resolve(__dirname, '../../../../strategies/corpora/policy-operations.md')
 
 export default async function (fastify, opts) {
-  // 1. Fetch raw comparison data
+  // 1. Fetch raw multi-experiment comparison data
   fastify.get('/data', async (request, reply) => {
-    if (fs.existsSync(dataFilePath)) {
-      const content = fs.readFileSync(dataFilePath, 'utf8')
+    if (fs.existsSync(labDataPath)) {
+      const content = fs.readFileSync(labDataPath, 'utf8')
       return JSON.parse(content)
     }
 
-    const data = await runSideBySideComparison({ topK: 5 })
-    fs.mkdirSync(path.dirname(dataFilePath), { recursive: true })
-    fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2))
+    const data = await runAllExperiments()
+    fs.mkdirSync(path.dirname(labDataPath), { recursive: true })
+    fs.writeFileSync(labDataPath, JSON.stringify(data, null, 2))
     return data
   })
 
@@ -32,10 +33,12 @@ export default async function (fastify, opts) {
   fastify.get('/view', async (request, reply) => {
     reply.type('text/html')
     let data
-    if (fs.existsSync(dataFilePath)) {
-      data = JSON.parse(fs.readFileSync(dataFilePath, 'utf8'))
+    if (fs.existsSync(labDataPath)) {
+      data = JSON.parse(fs.readFileSync(labDataPath, 'utf8'))
+    } else if (fs.existsSync(legacyDataPath)) {
+      data = JSON.parse(fs.readFileSync(legacyDataPath, 'utf8'))
     } else {
-      data = await runSideBySideComparison({ topK: 5 })
+      data = await runAllExperiments()
     }
     return generateHtmlReport(data)
   })
@@ -49,7 +52,7 @@ export default async function (fastify, opts) {
     clearDatabase()
     updateSettings({ chunkSize, overlap, topK, model: 'gpt-4o-mini' })
 
-    const docName = `[EXP] Enterprise Policy Manual (${chunkSize}t / ${overlap}ovlp)`
+    const docName = `[EXP] Enterprise Policy Manual (${chunkSize}t / ${overlap}ovlp, Top-K=${topK})`
     const ingestion = await seedCorpusDocument({
       corpusPath,
       docName,
@@ -59,7 +62,7 @@ export default async function (fastify, opts) {
 
     return {
       success: true,
-      message: `Successfully staged ${chunkSize}t/${overlap}ovlp configuration into active database`,
+      message: `Successfully staged ${chunkSize}t/${overlap}ovlp with Top-K=${topK} into active database`,
       documentId: ingestion.documentId,
       chunkCount: ingestion.chunkCount,
     }

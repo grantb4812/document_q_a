@@ -16,6 +16,13 @@ export const CHUNK_CONFIGS = [
   { id: '2000t-200ov', chunkSize: 2000, overlap: 200, label: '2000t / 200 ovlp (Macro-Chunks)', badge: 'Macro' },
 ]
 
+export const TOP_K_CONFIGS = [
+  { id: 'k1', topK: 1, label: 'Top-1 Retrieval (K=1)', badge: 'Minimal' },
+  { id: 'k3', topK: 3, label: 'Top-3 Retrieval (K=3)', badge: 'Compact' },
+  { id: 'k5', topK: 5, label: 'Top-5 Retrieval (K=5)', badge: 'Baseline' },
+  { id: 'k20', topK: 20, label: 'Top-20 Retrieval (K=20)', badge: 'Exhaustive' },
+]
+
 export const COMPARISON_QUERIES = [
   {
     id: 'Q1_BIOMETRIC_NEEDLE',
@@ -60,19 +67,25 @@ function cosineSimilarity(vecA, vecB) {
   return normA && normB ? dotProduct / (Math.sqrt(normA) * Math.sqrt(normB)) : 0
 }
 
-export async function runSideBySideComparison({ topK = 5 } = {}) {
+/**
+ * Run Experiment 01: Chunk Size & Overlap Boundary Benchmark
+ */
+export async function runChunkSizeComparison({ topK = 5 } = {}) {
   const openai = getOpenAIClient()
   const queryEmbeddings = await generateEmbeddings(COMPARISON_QUERIES.map((q) => q.query))
 
   const results = {
-    timestamp: new Date().toISOString(),
+    id: '01-chunk-size-and-overlap',
+    name: 'Experiment 01: Chunk Size & Overlap Boundary Benchmark',
+    shortName: '01. Chunk Size & Overlap',
+    description: 'Evaluates boundary preservation, chunk fragmentation, and context dilution across 100t, 200t, 500t, and 2000t.',
+    parameterName: 'Chunk Size',
     corpusName: 'Enterprise Policy & Operations Manual (GEC-2026)',
     topK,
     configs: [],
     questions: [],
   }
 
-  // Pre-process each chunking configuration
   const processedConfigs = []
   for (const cfg of CHUNK_CONFIGS) {
     const chunks = chunkDocumentPages(
@@ -105,7 +118,6 @@ export async function runSideBySideComparison({ topK = 5 } = {}) {
     })
   }
 
-  // Run each query across all chunk configurations
   for (let qIdx = 0; qIdx < COMPARISON_QUERIES.length; qIdx++) {
     const q = COMPARISON_QUERIES[qIdx]
     const qVec = queryEmbeddings[qIdx]
@@ -114,7 +126,6 @@ export async function runSideBySideComparison({ topK = 5 } = {}) {
     for (const pCfg of processedConfigs) {
       const serverStartTime = performance.now()
 
-      // Rank chunks
       const rankedChunks = pCfg.chunks.map((c, idx) => ({
         chunkIndex: c.chunkIndex,
         chunkNum: c.chunkIndex + 1,
@@ -127,7 +138,6 @@ export async function runSideBySideComparison({ topK = 5 } = {}) {
       const retrievedChunks = rankedChunks.slice(0, topK)
       const combinedText = retrievedChunks.map((c) => c.text).join('\n\n')
 
-      // Check ground truth presence
       const factsFound = q.targetFacts.filter((fact) =>
         combinedText.toLowerCase().includes(fact.toLowerCase())
       )
@@ -136,7 +146,6 @@ export async function runSideBySideComparison({ topK = 5 } = {}) {
       )
       const recallPercentage = Math.round((factsFound.length / q.targetFacts.length) * 100)
 
-      // Prompt construction
       const contextText = retrievedChunks
         .map((c) => `[Chunk #${c.chunkNum}] Document: "Enterprise Policy Manual" | Page: ${c.page || 1}\nContent:\n"""\n${c.text}\n"""`)
         .join('\n\n')
@@ -187,7 +196,7 @@ ${contextText || '(No relevant document context found in the database for this q
             }
           }
         } catch (err) {
-          fullResponse = `Error during LLM generation: ${err.message}`
+          fullResponse = `Error: ${err.message}`
         }
       } else {
         firstTokenTimestamp = performance.now() + 30
@@ -204,21 +213,14 @@ ${contextText || '(No relevant document context found in the database for this q
         ? Math.round(firstTokenTimestamp - serverStartTime)
         : Math.round(streamEndTime - serverStartTime)
       const totalServerDurationMs = Math.round(streamEndTime - serverStartTime)
-      const prefillDurationMs = firstTokenTimestamp
-        ? Math.round(firstTokenTimestamp - streamStartTime)
-        : 0
-      const generationDurationMs = firstTokenTimestamp
-        ? Math.round(streamEndTime - firstTokenTimestamp)
-        : Math.round(streamEndTime - streamStartTime)
-
       const promptCost = promptInputTokens * 0.00000015
       const completionCost = assistantTokens * 0.0000006
       const totalCost = promptCost + completionCost
-      const formattedCost = totalCost < 0.00001 ? '<$0.00001' : `$${totalCost.toFixed(5)}`
 
       configOutputs.push({
         configId: pCfg.id,
         configLabel: pCfg.label,
+        badge: pCfg.badge,
         chunkSize: pCfg.chunkSize,
         overlap: pCfg.overlap,
         answer: fullResponse,
@@ -238,12 +240,10 @@ ${contextText || '(No relevant document context found in the database for this q
         telemetry: {
           ttftMs: serverTtftMs,
           totalDurationMs: totalServerDurationMs,
-          prefillMs: prefillDurationMs,
-          generationMs: generationDurationMs,
           promptTokens: promptInputTokens,
           completionTokens: assistantTokens,
           totalTokens,
-          costFormatted: formattedCost,
+          costFormatted: totalCost < 0.00001 ? '<$0.00001' : `$${totalCost.toFixed(5)}`,
           costValue: totalCost,
         },
       })
@@ -260,4 +260,199 @@ ${contextText || '(No relevant document context found in the database for this q
   }
 
   return results
+}
+
+/**
+ * Run Experiment 02: Top-K Retrieval Depth Benchmark
+ */
+export async function runTopKComparison() {
+  const openai = getOpenAIClient()
+  const queryEmbeddings = await generateEmbeddings(COMPARISON_QUERIES.map((q) => q.query))
+
+  // Ingest baseline 500t / 50ov chunks once
+  const chunks = chunkDocumentPages(
+    [{ pageNumber: 1, text: corpusText }],
+    { targetTokens: 500, overlapTokens: 50 }
+  )
+  const chunkTexts = chunks.map((c) => c.text)
+  const chunkVectors = await generateEmbeddings(chunkTexts)
+  const totalTokens = chunks.reduce((sum, c) => sum + c.tokenCount, 0)
+  const embeddingCost = Number((totalTokens * 0.00000002).toFixed(7))
+
+  const results = {
+    id: '02-top-k-retrieval-depth',
+    name: 'Experiment 02: Top-K Retrieval Depth Benchmark (K=1, 3, 5, 20)',
+    shortName: '02. Top-K Retrieval Depth',
+    description: 'Evaluates the trade-off between retrieval recall, TTFT latency, context budget, and prompt cost across depth levels.',
+    parameterName: 'Retrieval Depth (K)',
+    corpusName: 'Enterprise Policy & Operations Manual (500t / 50ov Baseline)',
+    configs: TOP_K_CONFIGS.map((c) => ({
+      id: c.id,
+      label: c.label,
+      badge: c.badge,
+      topK: c.topK,
+      chunkSize: 500,
+      overlap: 50,
+      chunkCount: chunks.length,
+      totalTokens,
+      embeddingCost,
+    })),
+    questions: [],
+  }
+
+  for (let qIdx = 0; qIdx < COMPARISON_QUERIES.length; qIdx++) {
+    const q = COMPARISON_QUERIES[qIdx]
+    const qVec = queryEmbeddings[qIdx]
+    const configOutputs = []
+
+    const rankedChunks = chunks.map((c, idx) => ({
+      chunkIndex: c.chunkIndex,
+      chunkNum: c.chunkIndex + 1,
+      text: c.text,
+      page: c.page,
+      tokenCount: c.tokenCount,
+      score: Number(cosineSimilarity(qVec, chunkVectors[idx]).toFixed(4)),
+    })).sort((a, b) => b.score - a.score)
+
+    for (const kCfg of TOP_K_CONFIGS) {
+      const serverStartTime = performance.now()
+      const retrievedChunks = rankedChunks.slice(0, kCfg.topK)
+      const combinedText = retrievedChunks.map((c) => c.text).join('\n\n')
+
+      const factsFound = q.targetFacts.filter((fact) =>
+        combinedText.toLowerCase().includes(fact.toLowerCase())
+      )
+      const factsMissed = q.targetFacts.filter(
+        (fact) => !combinedText.toLowerCase().includes(fact.toLowerCase())
+      )
+      const recallPercentage = Math.round((factsFound.length / q.targetFacts.length) * 100)
+
+      const contextText = retrievedChunks
+        .map((c) => `[Chunk #${c.chunkNum}] Document: "Enterprise Policy Manual" | Page: ${c.page || 1}\nContent:\n"""\n${c.text}\n"""`)
+        .join('\n\n')
+
+      const systemPrompt = `You are a helpful, precise AI assistant for a Document Q&A application.
+Your goal is to answer the user's question accurately using ONLY the provided retrieved context sources below.
+
+Guidelines:
+1. Base your answers strictly on the context provided. Do not fabricate information.
+2. If the answer cannot be determined or found in the provided context or prior conversation, clearly state: "I could not find information about that in the uploaded documents."
+3. Cite your sources inline using the chunk identifier (e.g., [Chunk 1], [Chunk 2]) when making factual claims.
+4. Format your response cleanly using Markdown (bold text, bullet points, code blocks where appropriate).
+
+Retrieved Context Sources:
+${contextText || '(No relevant document context found in the database for this query.)'}`
+
+      const apiMessages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: q.query },
+      ]
+
+      const promptInputTokens = apiMessages.reduce(
+        (sum, msg) => sum + countTokens(msg.content) + 4,
+        0
+      )
+
+      let fullResponse = ''
+      let firstTokenTimestamp = null
+      const streamStartTime = performance.now()
+
+      if (openai) {
+        try {
+          const stream = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: apiMessages,
+            temperature: 0.2,
+            max_completion_tokens: 1024,
+            stream: true,
+          })
+
+          for await (const part of stream) {
+            const content = part.choices[0]?.delta?.content || ''
+            if (content) {
+              if (!firstTokenTimestamp) {
+                firstTokenTimestamp = performance.now()
+              }
+              fullResponse += content
+            }
+          }
+        } catch (err) {
+          fullResponse = `Error: ${err.message}`
+        }
+      } else {
+        firstTokenTimestamp = performance.now() + 30
+        fullResponse = retrievedChunks.length > 0
+          ? `Based on [Chunk #${retrievedChunks[0].chunkNum}]:\n\n${retrievedChunks[0].text.slice(0, 260)}...`
+          : 'I could not find information about that in the uploaded documents.'
+      }
+
+      const streamEndTime = performance.now()
+      const assistantTokens = countTokens(fullResponse)
+      const totalTokens = promptInputTokens + assistantTokens
+
+      const serverTtftMs = firstTokenTimestamp
+        ? Math.round(firstTokenTimestamp - serverStartTime)
+        : Math.round(streamEndTime - serverStartTime)
+      const totalServerDurationMs = Math.round(streamEndTime - serverStartTime)
+      const promptCost = promptInputTokens * 0.00000015
+      const completionCost = assistantTokens * 0.0000006
+      const totalCost = promptCost + completionCost
+
+      configOutputs.push({
+        configId: kCfg.id,
+        configLabel: kCfg.label,
+        badge: kCfg.badge,
+        topK: kCfg.topK,
+        chunkSize: 500,
+        overlap: 50,
+        answer: fullResponse,
+        retrievedChunks: retrievedChunks.map((c) => ({
+          chunkNum: c.chunkNum,
+          text: c.text,
+          page: c.page,
+          tokenCount: c.tokenCount,
+          score: c.score,
+        })),
+        groundTruth: {
+          recallPercentage,
+          factsFound,
+          factsMissed,
+          verdict: recallPercentage === 100 ? 'PASS' : recallPercentage > 0 ? 'PARTIAL' : 'FAIL',
+        },
+        telemetry: {
+          ttftMs: serverTtftMs,
+          totalDurationMs: totalServerDurationMs,
+          promptTokens: promptInputTokens,
+          completionTokens: assistantTokens,
+          totalTokens,
+          costFormatted: totalCost < 0.00001 ? '<$0.00001' : `$${totalCost.toFixed(5)}`,
+          costValue: totalCost,
+        },
+      })
+    }
+
+    results.questions.push({
+      id: q.id,
+      title: q.title,
+      query: q.query,
+      targetFacts: q.targetFacts,
+      description: q.description,
+      comparisons: configOutputs,
+    })
+  }
+
+  return results
+}
+
+/**
+ * Run and package all experiments together into a master lab bundle
+ */
+export async function runAllExperiments() {
+  const exp1 = await runChunkSizeComparison({ topK: 5 })
+  const exp2 = await runTopKComparison()
+
+  return {
+    timestamp: new Date().toISOString(),
+    experiments: [exp1, exp2],
+  }
 }

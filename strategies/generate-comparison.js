@@ -2,21 +2,23 @@ import 'dotenv/config'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { runSideBySideComparison } from './lib/comparison-runner.js'
+import { runAllExperiments } from './lib/comparison-runner.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const dataDir = path.join(__dirname, 'data')
 const reportsDir = path.join(__dirname, 'reports')
 
-export function generateHtmlReport(data) {
-  const jsonString = JSON.stringify(data).replace(/</g, '\\u003c')
+export function generateHtmlReport(bundleData) {
+  // Support both multi-experiment bundle and single experiment data
+  const normalizedData = bundleData.experiments ? bundleData : { experiments: [bundleData] }
+  const jsonString = JSON.stringify(normalizedData).replace(/</g, '\\u003c')
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RAG Strategy Lab • Side-by-Side Chunking & Retrieval Diff</title>
+  <title>RAG Strategy Lab • Interactive Strategy Comparison</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -55,7 +57,7 @@ export function generateHtmlReport(data) {
 
     header {
       max-width: 1560px;
-      margin: 0 auto 24px;
+      margin: 0 auto 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -107,6 +109,41 @@ export function generateHtmlReport(data) {
       gap: 24px;
     }
 
+    /* Experiment Switcher Tabs */
+    .exp-switch-bar {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .exp-btn {
+      flex: 1;
+      min-width: 280px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 12px 16px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--text-muted);
+    }
+    .exp-btn:hover {
+      background: var(--bg-card);
+      color: var(--text);
+    }
+    .exp-btn.active {
+      background: var(--bg-card);
+      border-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 0 16px var(--primary-glow);
+    }
+    .exp-title { font-weight: 700; font-size: 0.95rem; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .exp-desc { font-size: 0.78rem; color: var(--text-dim); margin-top: 4px; }
+
     /* Summary Bar */
     .overview-strip {
       display: grid;
@@ -122,12 +159,12 @@ export function generateHtmlReport(data) {
       overflow: hidden;
     }
     .metric-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-    .metric-val { font-size: 1.4rem; font-weight: 700; margin-top: 4px; font-family: var(--font-mono); }
+    .metric-val { font-size: 1.35rem; font-weight: 700; margin-top: 4px; font-family: var(--font-mono); }
     .metric-sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 2px; }
 
     /* Question Navigator Tabs */
     .section-title {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       margin-bottom: 12px;
       display: flex;
@@ -230,7 +267,7 @@ export function generateHtmlReport(data) {
       justify-content: space-between;
       align-items: center;
     }
-    .col-title { font-weight: 700; font-size: 0.95rem; }
+    .col-title { font-weight: 700; font-size: 0.92rem; }
     .col-badge {
       font-size: 0.7rem;
       font-weight: 700;
@@ -356,9 +393,9 @@ export function generateHtmlReport(data) {
     <div>
       <div class="title-group">
         <span class="lab-badge">Strategy Lab</span>
-        <h1>Side-by-Side Chunking & Retrieval Diff</h1>
+        <h1>RAG Strategy & Evaluation Lab</h1>
       </div>
-      <p class="subtitle">Evaluates 100t vs 200t vs 500t vs 2000t chunk sizes on identical queries</p>
+      <p class="subtitle" id="lab-subtitle">Interactive side-by-side answer, retrieval & telemetry comparison</p>
     </div>
     <div class="header-actions">
       <button class="action-btn" onclick="window.location.reload()">🔄 Refresh Lab</button>
@@ -367,6 +404,12 @@ export function generateHtmlReport(data) {
   </header>
 
   <div class="main-layout">
+    <!-- Top-Level Experiment Selector -->
+    <div>
+      <div class="section-title"><span>🔬</span> Select Strategy Experiment</div>
+      <div class="exp-switch-bar" id="exp-switch-bar"></div>
+    </div>
+
     <!-- Top Summary Strip -->
     <div class="overview-strip" id="overview-strip"></div>
 
@@ -384,25 +427,42 @@ export function generateHtmlReport(data) {
   </div>
 
   <script>
-    const DATA = ${jsonString};
+    const BUNDLE = ${jsonString};
+    let activeExpIndex = 0;
     let activeQuestionIndex = 0;
 
+    function renderExpSelector() {
+      const container = document.getElementById('exp-switch-bar');
+      container.innerHTML = BUNDLE.experiments.map((exp, i) => \`
+        <div class="exp-btn \${i === activeExpIndex ? 'active' : ''}" onclick="selectExperiment(\${i})">
+          <div class="exp-title">
+            <span>\${i === 0 ? '📏' : '🎯'}</span>
+            \${exp.shortName || exp.name}
+          </div>
+          <div class="exp-desc">\${exp.description}</div>
+        </div>
+      \`).join('');
+    }
+
     function renderOverview() {
+      const exp = BUNDLE.experiments[activeExpIndex];
+      document.getElementById('lab-subtitle').textContent = exp.description;
       const container = document.getElementById('overview-strip');
-      const configs = DATA.configs || [];
+      const configs = exp.configs || [];
       
       container.innerHTML = configs.map(c => \`
         <div class="metric-card">
           <div class="metric-label">\${c.label}</div>
-          <div class="metric-val">\${c.chunkCount} <span style="font-size:0.9rem; font-weight:400; color:var(--text-muted)">chunks</span></div>
-          <div class="metric-sub">\${c.totalTokens.toLocaleString()} tokens • $\${c.embeddingCost.toFixed(5)} ingest cost</div>
+          <div class="metric-val">\${c.chunkCount || 4} <span style="font-size:0.9rem; font-weight:400; color:var(--text-muted)">chunks</span></div>
+          <div class="metric-sub">\${c.topK ? 'Depth: K=' + c.topK : (c.totalTokens ? c.totalTokens.toLocaleString() + ' tokens' : '')} • $\${(c.embeddingCost || 0.00003).toFixed(5)} ingest</div>
         </div>
       \`).join('');
     }
 
     function renderTabs() {
+      const exp = BUNDLE.experiments[activeExpIndex];
       const container = document.getElementById('q-tabs');
-      container.innerHTML = DATA.questions.map((q, i) => \`
+      container.innerHTML = exp.questions.map((q, i) => \`
         <button class="q-tab \${i === activeQuestionIndex ? 'active' : ''}" onclick="selectQuestion(\${i})">
           \${i + 1}. \${q.title}
         </button>
@@ -410,10 +470,13 @@ export function generateHtmlReport(data) {
     }
 
     function renderActiveQuestion() {
-      const q = DATA.questions[activeQuestionIndex];
+      const exp = BUNDLE.experiments[activeExpIndex];
+      const q = exp.questions[activeQuestionIndex];
+      if (!q) return;
+
       const banner = document.getElementById('question-banner');
       banner.innerHTML = \`
-        <span class="q-badge">Query \${activeQuestionIndex + 1} of \${DATA.questions.length} • \${q.title}</span>
+        <span class="q-badge">Query \${activeQuestionIndex + 1} of \${exp.questions.length} • \${q.title}</span>
         <div class="q-text">"\${q.query}"</div>
         <div class="target-facts-box">
           <strong style="color:var(--text-muted)">Target Ground Truth:</strong>
@@ -425,11 +488,14 @@ export function generateHtmlReport(data) {
     }
 
     function renderGrid() {
-      const q = DATA.questions[activeQuestionIndex];
+      const exp = BUNDLE.experiments[activeExpIndex];
+      const q = exp.questions[activeQuestionIndex];
+      if (!q) return;
+
       const grid = document.getElementById('comparison-grid');
 
-      grid.innerHTML = q.comparisons.map((c, idx) => {
-        const isBaseline = c.chunkSize === 500;
+      grid.innerHTML = q.comparisons.map((c) => {
+        const isBaseline = c.badge === 'Baseline' || c.topK === 5 || c.chunkSize === 500;
         const v = c.groundTruth.verdict;
         const formattedAnswer = c.answer
           .replace(/\\[Chunk #?(\\d+)\\]/g, '<span class="citation-tag">[Chunk $1]</span>')
@@ -439,7 +505,7 @@ export function generateHtmlReport(data) {
           <div class="config-col">
             <div class="col-header">
               <span class="col-title">\${c.configLabel}</span>
-              <span class="col-badge \${isBaseline ? 'baseline' : ''}">\${isBaseline ? 'Baseline' : c.chunkSize + 't'}</span>
+              <span class="col-badge \${isBaseline ? 'baseline' : ''}">\${c.badge || (isBaseline ? 'Baseline' : '')}</span>
             </div>
 
             <div class="verdict-banner \${v}">
@@ -484,12 +550,21 @@ export function generateHtmlReport(data) {
               \`).join('')}
             </div>
 
-            <button class="stage-btn" onclick="stageConfig(\${c.chunkSize}, \${c.overlap})">
-              🚀 Stage \${c.chunkSize}t/\${c.overlap}ov to Live DB
+            <button class="stage-btn" onclick="stageConfig(\${c.chunkSize || 500}, \${c.overlap || 50}, \${c.topK || 5})">
+              🚀 Stage to Live DB
             </button>
           </div>
         \`;
       }).join('');
+    }
+
+    function selectExperiment(idx) {
+      activeExpIndex = idx;
+      activeQuestionIndex = 0;
+      renderExpSelector();
+      renderOverview();
+      renderTabs();
+      renderActiveQuestion();
     }
 
     function selectQuestion(idx) {
@@ -498,16 +573,17 @@ export function generateHtmlReport(data) {
       renderActiveQuestion();
     }
 
-    async function stageConfig(chunkSize, overlap) {
+    async function stageConfig(chunkSize, overlap, topK) {
       try {
-        const res = await fetch(\`/api/lab/stage?chunkSize=\${chunkSize}&overlap=\${overlap}\`, { method: 'POST' });
+        const res = await fetch(\`/api/lab/stage?chunkSize=\${chunkSize}&overlap=\${overlap}&topK=\${topK}\`, { method: 'POST' });
         const resData = await res.json();
-        alert(\`✅ Live Database staged with \${chunkSize}t chunk size! You can now switch to the main UI tab to test.\`);
+        alert(\`✅ Live Database staged with \${chunkSize}t chunk size & Top-K=\${topK}! You can now switch to the main UI tab to test.\`);
       } catch (err) {
         alert('Staged request sent! Check your main app.');
       }
     }
 
+    renderExpSelector();
     renderOverview();
     renderTabs();
     renderActiveQuestion();
@@ -518,25 +594,25 @@ export function generateHtmlReport(data) {
 
 async function main() {
   console.log('='.repeat(80))
-  console.log('🔬 GENERATING FULL SIDE-BY-SIDE STRATEGY COMPARISON DATASET')
+  console.log('🔬 GENERATING FULL MULTI-EXPERIMENT STRATEGY LAB DATASET')
   console.log('='.repeat(80))
 
-  const results = await runSideBySideComparison({ topK: 5 })
+  const bundle = await runAllExperiments()
 
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true })
   if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir, { recursive: true })
 
-  const jsonPath = path.join(dataDir, 'comparison-results.json')
-  fs.writeFileSync(jsonPath, JSON.stringify(results, null, 2))
-  console.log(`✓ Stored comparison dataset: ${jsonPath}`)
+  const jsonPath = path.join(dataDir, 'lab-experiments.json')
+  fs.writeFileSync(jsonPath, JSON.stringify(bundle, null, 2))
+  console.log(`✓ Stored multi-experiment dataset: ${jsonPath}`)
 
-  const htmlContent = generateHtmlReport(results)
-  const htmlPath = path.join(reportsDir, 'chunk-comparison.html')
+  const htmlContent = generateHtmlReport(bundle)
+  const htmlPath = path.join(reportsDir, 'strategy-lab.html')
   fs.writeFileSync(htmlPath, htmlContent)
   console.log(`✓ Generated standalone HTML report: ${htmlPath}`)
 
   console.log('='.repeat(80))
-  console.log('✨ All comparison data ready!')
+  console.log('✨ Strategy Lab datasets ready!')
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
