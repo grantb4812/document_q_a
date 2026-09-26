@@ -1,8 +1,10 @@
+import 'dotenv/config'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chunkDocumentPages, countTokens } from '../../../src/server/routes/documents/tokenChunker.js'
 import { generateEmbeddings, getOpenAIClient } from '../../../src/server/routes/documents/embeddingService.js'
+import { clearDatabase, updateSettings, seedCorpusDocument } from '../../lib/db-seeder.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const corpusPath = path.join(__dirname, '../../corpora/policy-operations.md')
@@ -141,6 +143,20 @@ async function runBenchmark() {
     JSON.stringify(testResults, null, 2)
   )
   console.log(`✅ Experiment 01 complete! Results written to: ${path.join(resultsDir, '01-sliding-window.json')}`)
+
+  const shouldStage = process.argv.includes('--stage') || process.argv.includes('--seed-db')
+  if (shouldStage) {
+    console.log('\n🚀 Auto-staging baseline config into live database for UI inspection...')
+    clearDatabase()
+    updateSettings({ chunkSize: 500, overlap: 50, topK: 5, model: 'gpt-4o-mini' })
+    await seedCorpusDocument({
+      corpusPath,
+      docName: '[EXP-01] Enterprise Policy Manual (500t / 50ovlp)',
+      chunkSize: 500,
+      overlap: 50,
+    })
+    console.log('✨ Live database updated! Refresh UI to inspect.')
+  }
 }
 
 runBenchmark().catch(console.error)
