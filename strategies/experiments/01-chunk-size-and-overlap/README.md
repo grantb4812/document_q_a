@@ -13,31 +13,31 @@
 
 - **Corpus:** [`strategies/corpora/policy-operations.md`](../../corpora/policy-operations.md) (~1,439 BPE tokens).
 - **Configurations Evaluated:**
-  1. `EXP-200-0`: 200 tokens, 0 overlap
-  2. `EXP-200-50`: 200 tokens, 50 overlap
-  3. `EXP-500-50`: 500 tokens, 50 overlap (**Default Baseline**)
-  4. `EXP-2000-0`: 2000 tokens, 0 overlap
-  5. `EXP-2000-200`: 2000 tokens, 200 overlap
+  1. `EXP-200-PURE`: 200 tokens, 0 overlap (Pure Micro-Chunking)
+  2. `EXP-500-BASELINE`: 500 tokens, 50 overlap (Balanced Reference)
+  3. `EXP-2000-PURE`: 2000 tokens, 0 overlap (Pure Macro-Chunking / Monolithic)
 
 ---
 
 ## 3. Empirical Results Matrix
 
-| Configuration | Chunks Produced | Ingest Token Overhead | Ingest Cost | Top-3 Prompt Tokens | Prompt Cost / Query | Context Integrity Score |
+| Configuration | Chunks Produced | Ingest Tokens | Ingest Cost | Prompt Tokens / Query | Query Cost | Context Integrity & Breakage |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`200 tokens / 0 ovlp`** | 8 chunks | 1,439 tokens (+0%) | $0.000029 | 439 tokens | $0.000066 | ⚠️ Low (Fragmented) |
-| **`200 tokens / 50 ovlp`** | 10 chunks | 1,889 tokens (**+31%**) | $0.000038 | 489 tokens | $0.000073 | ⚠️ Medium-Low |
-| **`500 tokens / 50 ovlp`** | **4 chunks** | **1,589 tokens (+10%)** | **$0.000032** | **1,089 tokens** | **$0.000163** | ⚖️ **Optimal Balance** |
-| **`2000 tokens / 0 ovlp`** | 1 chunk | 1,439 tokens (+0%) | $0.000029 | 1,439 tokens | $0.000216 | ⚠️ Diluted / High Cost |
-| **`2000 tokens / 200 ovlp`**| 1 chunk | 1,439 tokens (+0%) | $0.000029 | 1,439 tokens | $0.000216 | ⚠️ Diluted / High Cost |
+| **`200 tokens (Pure)`** | 8 chunks | 1,439 tokens | $0.000029 | 439 tokens | $0.000066 | ❌ **Fractures Tables & Slices Exception Clauses** |
+| **`500 tokens (Baseline)`** | **4 chunks** | **1,589 tokens** | **$0.000032** | **1,089 tokens** | **$0.000163** | ⚖️ **Optimal Balance (Whole Sections Intact)** |
+| **`2000 tokens (Pure)`** | 1 chunk | 1,439 tokens | $0.000029 | 1,439 tokens | $0.000216 | ⚠️ **Vector Dilution & High Prompt Latency** |
 
 ---
 
-## 4. Key Takeaways & Failure Modes
+## 4. What Breaks at Each Extreme (No Assumptions)
 
-1. **200 Tokens (Micro):** Slices rules away from exceptions. A query about enterprise refunds retrieves the eligibility clause but omits non-refundable conditions in paragraph 2, leading the LLM to provide **unqualified, incorrect answers**.
-2. **2000 Tokens (Macro):** Increases per-query prompt cost by $3.3\times$, slows TTFT due to prefill latency, and dilutes vector discrimination on needle-in-a-haystack codes like `BIO-SEC-9844-DELTA`.
-3. **The Sweet Spot:** **`400 – 600 tokens` with `10% – 15% overlap` (`40–60 tokens`)** preserves paragraph structure and keeps prompt costs `<$0.00020` per query.
+### 🔴 What Breaks at 200 Tokens (Micro-Chunks):
+1. **Markdown Tables Fracture:** The 4-tier pricing and bandwidth table spans ~180 tokens. At 200t, the table headers and lower rows get chopped into separate chunks, causing queries about Tier-3 Platinum or cross-region overage to retrieve incomplete fragments.
+2. **Exception Clauses are Severed from Base Rules:** In Section 1 and Section 2, the baseline rule (e.g. 99.99% uptime) is separated from the 3 disqualifying conditions. The LLM retrieves the rule without the caveat and gives **confidently incomplete answers**.
+
+### 🟡 What Breaks at 2000 Tokens (Macro-Chunks):
+1. **Needle-in-a-Haystack Vector Dilution:** The entire 1,439-token document fits in a single chunk. Embedding 1,439 tokens into a single 1536-d vector averages out distinct technical keywords (`BIO-SEC-9844-DELTA`), lowering cosine similarity discrimination.
+2. **Context Window Inflation & Slower TTFT:** Every single query must feed the entire document into the prompt, driving up input tokens by $3.3\times$ and increasing server prefill latency.
 
 ---
 

@@ -10,10 +10,9 @@ const corpusPath = path.join(__dirname, '../corpora/policy-operations.md')
 const corpusText = fs.readFileSync(corpusPath, 'utf8')
 
 export const CHUNK_CONFIGS = [
-  { id: '100t-50ov', chunkSize: 100, overlap: 50, label: '100t / 50 ovlp (Micro-Chunks)', badge: 'Micro' },
-  { id: '200t-50ov', chunkSize: 200, overlap: 50, label: '200t / 50 ovlp (Compact)', badge: 'Compact' },
-  { id: '500t-50ov', chunkSize: 500, overlap: 50, label: '500t / 50 ovlp (Baseline)', badge: 'Baseline' },
-  { id: '2000t-200ov', chunkSize: 2000, overlap: 200, label: '2000t / 200 ovlp (Macro-Chunks)', badge: 'Macro' },
+  { id: '200t-pure', chunkSize: 200, overlap: 0, label: '200t Micro-Chunk (Pure Size)', badge: '200t Micro' },
+  { id: '500t-baseline', chunkSize: 500, overlap: 50, label: '500t Baseline (Reference)', badge: '500t Baseline' },
+  { id: '2000t-pure', chunkSize: 2000, overlap: 0, label: '2000t Macro-Chunk (Monolithic)', badge: '2000t Macro' },
 ]
 
 export const TOP_K_CONFIGS = [

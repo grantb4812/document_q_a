@@ -11,11 +11,9 @@ const corpusPath = path.join(__dirname, '../../corpora/policy-operations.md')
 const corpusText = fs.readFileSync(corpusPath, 'utf8')
 
 const CONFIGS = [
-  { id: 'EXP-200-0', chunkSize: 200, overlap: 0, label: 'Micro-Chunks (200t, 0 ovlp)' },
-  { id: 'EXP-200-50', chunkSize: 200, overlap: 50, label: 'Micro-Chunks with Overlap (200t, 50 ovlp)' },
-  { id: 'EXP-500-50', chunkSize: 500, overlap: 50, label: 'Baseline (500t, 50 ovlp)' },
-  { id: 'EXP-2000-0', chunkSize: 2000, overlap: 0, label: 'Macro-Chunks (2000t, 0 ovlp)' },
-  { id: 'EXP-2000-200', chunkSize: 2000, overlap: 200, label: 'Macro-Chunks with Overlap (2000t, 200 ovlp)' },
+  { id: 'EXP-200-PURE', chunkSize: 200, overlap: 0, label: '200t Micro-Chunk (Pure Size)' },
+  { id: 'EXP-500-BASELINE', chunkSize: 500, overlap: 50, label: '500t Baseline (Reference)' },
+  { id: 'EXP-2000-PURE', chunkSize: 2000, overlap: 0, label: '2000t Macro-Chunk (Monolithic)' },
 ]
 
 const QUERIES = [
