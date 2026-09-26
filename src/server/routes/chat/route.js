@@ -167,9 +167,9 @@ export default async function (fastify, opts) {
         contextText = retrievedChunks
           .map((chunk, i) => {
             const docName = chunk.documentName || `Document #${chunk.documentId || i + 1}`
+            const chunkNum = chunk.chunkIndex !== undefined ? chunk.chunkIndex + 1 : i + 1
             const pageInfo = chunk.page ? ` | Page: ${chunk.page}` : ''
-            const chunkNum = chunk.chunkIndex !== undefined ? ` | Chunk: #${chunk.chunkIndex + 1}` : ''
-            return `[Source ${i + 1}] Document: "${docName}"${pageInfo}${chunkNum}\nContent:\n"""\n${chunk.text}\n"""`
+            return `[Chunk #${chunkNum}] Document: "${docName}"${pageInfo}\nContent:\n"""\n${chunk.text}\n"""`
           })
           .join('\n\n')
       }
@@ -180,7 +180,7 @@ Your goal is to answer the user's question accurately using ONLY the provided re
 Guidelines:
 1. Base your answers strictly on the context provided. Do not fabricate information.
 2. If the answer cannot be determined or found in the provided context or prior conversation, clearly state: "I could not find information about that in the uploaded documents."
-3. Cite your sources inline using the source number or document name (e.g., [Source 1] or [${retrievedChunks[0]?.documentName || 'Document'}, Page X]) when making factual claims.
+3. Cite your sources inline using the chunk identifier (e.g., [Chunk 1], [Chunk 2]) when making factual claims.
 4. If the user asks a follow-up question referencing prior conversation (e.g. "what about that one", "can you elaborate"), use the prior messages and current context to respond cohesively.
 5. Format your response cleanly using Markdown (bold text, bullet points, code blocks where appropriate).
 
