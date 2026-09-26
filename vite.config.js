@@ -11,6 +11,10 @@ export default defineConfig({
         target: "http://127.0.0.1:3000", // Your backend server URL
         changeOrigin: true, // Changes the origin of the host header to the target URL
       },
+      "/lab": {
+        target: "http://127.0.0.1:3000",
+        changeOrigin: true,
+      },
     },
   },
 });

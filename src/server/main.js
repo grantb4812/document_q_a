@@ -32,6 +32,10 @@ fastify.register(fastifyStatic, {
   wildcard: false, 
 });
 
+fastify.get("/lab", async (request, reply) => {
+  return reply.redirect("/api/lab/view");
+});
+
 fastify.get("/*", async (request, reply) => {
   return reply.sendFile("index.html");
 });
