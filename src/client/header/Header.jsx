@@ -1,5 +1,4 @@
-import { AppBar, Toolbar, Typography, Box, Avatar, Button } from '@mui/material'
-import { ScienceOutlined } from '@mui/icons-material'
+import { AppBar, Toolbar, Typography, Box, Avatar } from '@mui/material'
 
 function Header({ initials = 'GB' }) {
   return (
@@ -41,35 +40,8 @@ function Header({ initials = 'GB' }) {
           </Typography>
         </Box>
 
-        {/* Right Side: Strategy Lab Link & User Initials */}
+        {/* Right Side: User Initials */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<ScienceOutlined sx={{ fontSize: '15px !important', color: 'primary.main' }} />}
-            href="/lab"
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-              fontSize: '0.8rem',
-              height: 30,
-              px: 1.5,
-              borderRadius: '6px',
-              borderColor: 'divider',
-              color: 'text.primary',
-              bgcolor: 'background.paper',
-              boxShadow: 'none',
-              '&:hover': {
-                borderColor: 'primary.main',
-                bgcolor: 'action.hover',
-              },
-            }}
-          >
-            Strategy Lab
-          </Button>
-
           <Avatar
             sx={{
               width: 32,

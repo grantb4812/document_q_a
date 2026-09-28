@@ -1,0 +1,170 @@
+[
+  {
+    "configId": "GREEDY_STARVATION",
+    "label": "Greedy Chunk Ingestion (Top-K = 12, Chunk Size = 1000t)",
+    "chunkSize": 1000,
+    "topK": 12,
+    "turns": [
+      {
+        "turn": 1,
+        "userQuery": "What is the base monthly seat rate for the Tier-3 Platinum plan?",
+        "requiresHistory": false,
+        "systemTokens": 11536,
+        "retrievedTokens": 11365,
+        "remainingHistoryBudget": 0,
+        "retainedTurns": 0,
+        "totalStoredTurns": 0,
+        "droppedTurns": 0,
+        "assistantAnswer": "The base monthly seat rate for the Tier-3 Platinum plan is **$175 per user per month**."
+      },
+      {
+        "turn": 2,
+        "userQuery": "What is the storage allocation and dedicated bandwidth for that same plan?",
+        "requiresHistory": true,
+        "systemTokens": 11536,
+        "retrievedTokens": 11365,
+        "remainingHistoryBudget": 0,
+        "retainedTurns": 1,
+        "totalStoredTurns": 2,
+        "droppedTurns": 1,
+        "assistantAnswer": "The Tier-3 Platinum plan has a storage allocation of **50 TB NVMe SSD** and a dedicated bandwidth of **25.0 Gbps Dedicated**."
+      },
+      {
+        "turn": 3,
+        "userQuery": "If our company has 50 users on it, what is our total base monthly expenditure?",
+        "requiresHistory": true,
+        "systemTokens": 11536,
+        "retrievedTokens": 11365,
+        "remainingHistoryBudget": 0,
+        "retainedTurns": 1,
+        "totalStoredTurns": 4,
+        "droppedTurns": 3,
+        "assistantAnswer": "For the Tier-3 Platinum plan, the base monthly seat rate is **$175 per user**. Therefore, for 50 users, the total base monthly expenditure would be:\n\n\\[ \n50 \\text{ users} \\times \\$175 \\text{ per user} = \\$8,750 \n\\]\n\nSo, the total base monthly expenditure would be **$8,750**."
+      },
+      {
+        "turn": 4,
+        "userQuery": "Can you summarize all 3 specs and our calculated monthly total from our discussion?",
+        "requiresHistory": true,
+        "systemTokens": 11535,
+        "retrievedTokens": 11365,
+        "remainingHistoryBudget": 0,
+        "retainedTurns": 1,
+        "totalStoredTurns": 6,
+        "droppedTurns": 5,
+        "assistantAnswer": "Certainly! Here are the summarized specifications and the calculated monthly total:\n\n### Specifications for Tier-3 Platinum Plan:\n- **Dedicated Bandwidth:** 25.0 Gbps Dedicated\n- **VCPU / RAM Ceilings:** 256 vCPU / 1,024 GB\n- **Storage Allocation:** 50 TB NVMe SSD\n- **Base Monthly Seat Rate:** $175 per user\n- **Support SLA Response:** 15-min dedicated Slack / PagerDuty\n\n### Calculated Monthly Total:\nFor **50 users**:\n- **Total Base Monthly Expenditure:** \n\\[ \n50 \\text{ users} \\times \\$175 \\text{ per user} = \\$8,750 \n\\]\n\n### Total:\n- **Total Monthly Expenditure:** **$8,750**."
+      }
+    ]
+  },
+  {
+    "configId": "MODERATE_AGGRESSIVE_EVICTION",
+    "label": "Aggressive Sliding Drop (Medium Chunk Size & Medium Top-K)",
+    "chunkSize": 800,
+    "topK": 6,
+    "turns": [
+      {
+        "turn": 1,
+        "userQuery": "What is the base monthly seat rate for the Tier-3 Platinum plan?",
+        "requiresHistory": false,
+        "systemTokens": 4911,
+        "retrievedTokens": 4800,
+        "remainingHistoryBudget": 5026,
+        "retainedTurns": 0,
+        "totalStoredTurns": 0,
+        "droppedTurns": 0,
+        "assistantAnswer": "The base monthly seat rate for the Tier-3 Platinum plan is $175 per user per month."
+      },
+      {
+        "turn": 2,
+        "userQuery": "What is the storage allocation and dedicated bandwidth for that same plan?",
+        "requiresHistory": true,
+        "systemTokens": 4475,
+        "retrievedTokens": 4365,
+        "remainingHistoryBudget": 5464,
+        "retainedTurns": 2,
+        "totalStoredTurns": 2,
+        "droppedTurns": 0,
+        "assistantAnswer": "The storage allocation for the Tier-3 Platinum plan is 50 TB NVMe SSD, and the dedicated bandwidth is 25.0 Gbps."
+      },
+      {
+        "turn": 3,
+        "userQuery": "If our company has 50 users on it, what is our total base monthly expenditure?",
+        "requiresHistory": true,
+        "systemTokens": 4476,
+        "retrievedTokens": 4365,
+        "remainingHistoryBudget": 5458,
+        "retainedTurns": 4,
+        "totalStoredTurns": 4,
+        "droppedTurns": 0,
+        "assistantAnswer": "For 50 users on the Tier-3 Platinum plan, the total base monthly expenditure would be calculated as follows:\n\nBase monthly seat rate: $175 per user per month  \nTotal users: 50\n\nTotal expenditure = $175 * 50 = $8,750\n\nTherefore, the total base monthly expenditure would be $8,750."
+      },
+      {
+        "turn": 4,
+        "userQuery": "Can you summarize all 3 specs and our calculated monthly total from our discussion?",
+        "requiresHistory": true,
+        "systemTokens": 4476,
+        "retrievedTokens": 4365,
+        "remainingHistoryBudget": 5460,
+        "retainedTurns": 6,
+        "totalStoredTurns": 6,
+        "droppedTurns": 0,
+        "assistantAnswer": "Certainly! Here are the summarized specifications and calculated monthly total for the Tier-3 Platinum plan:\n\n### Tier-3 Platinum Plan Specifications:\n- **Base Monthly Seat Rate:** $175 per user per month\n- **Storage Allocation:** 50 TB NVMe SSD\n- **Dedicated Bandwidth:** 25.0 Gbps\n\n### Total Monthly Expenditure:\n- **Total for 50 Users:** $8,750\n\nThus, the total monthly expenditure for 50 users on the Tier-3 Platinum plan is $8,750."
+      }
+    ]
+  },
+  {
+    "configId": "BALANCED_PROTECTED",
+    "label": "Balanced Token Budget (Optimized Chunk Size & Top-K)",
+    "chunkSize": 400,
+    "topK": 3,
+    "turns": [
+      {
+        "turn": 1,
+        "userQuery": "What is the base monthly seat rate for the Tier-3 Platinum plan?",
+        "requiresHistory": false,
+        "systemTokens": 1283,
+        "retrievedTokens": 1200,
+        "remainingHistoryBudget": 8654,
+        "retainedTurns": 0,
+        "totalStoredTurns": 0,
+        "droppedTurns": 0,
+        "assistantAnswer": "The base monthly seat rate for the Tier-3 Platinum plan is $175 per user per month."
+      },
+      {
+        "turn": 2,
+        "userQuery": "What is the storage allocation and dedicated bandwidth for that same plan?",
+        "requiresHistory": true,
+        "systemTokens": 1283,
+        "retrievedTokens": 1200,
+        "remainingHistoryBudget": 8656,
+        "retainedTurns": 2,
+        "totalStoredTurns": 2,
+        "droppedTurns": 0,
+        "assistantAnswer": "The storage allocation for the Tier-3 Platinum plan is 50 TB NVMe SSD, and the dedicated bandwidth is 25.0 Gbps."
+      },
+      {
+        "turn": 3,
+        "userQuery": "If our company has 50 users on it, what is our total base monthly expenditure?",
+        "requiresHistory": true,
+        "systemTokens": 1283,
+        "retrievedTokens": 1200,
+        "remainingHistoryBudget": 8651,
+        "retainedTurns": 4,
+        "totalStoredTurns": 4,
+        "droppedTurns": 0,
+        "assistantAnswer": "For 50 users on the Tier-3 Platinum plan, the total base monthly expenditure would be calculated as follows:\n\nBase monthly seat rate for Tier-3 Platinum: $175 per user\nTotal for 50 users: 50 users * $175/user = $8,750\n\nTherefore, the total base monthly expenditure would be $8,750."
+      },
+      {
+        "turn": 4,
+        "userQuery": "Can you summarize all 3 specs and our calculated monthly total from our discussion?",
+        "requiresHistory": true,
+        "systemTokens": 1247,
+        "retrievedTokens": 1165,
+        "remainingHistoryBudget": 8689,
+        "retainedTurns": 6,
+        "totalStoredTurns": 6,
+        "droppedTurns": 0,
+        "assistantAnswer": "Certainly! Here are the summarized specifications for the Tier-3 Platinum plan and the calculated monthly total:\n\n### Tier-3 Platinum Plan Specifications:\n- **Base Monthly Seat Rate:** $175 per user\n- **Storage Allocation:** 50 TB NVMe SSD\n- **Dedicated Bandwidth:** 25.0 Gbps\n\n### Total Monthly Expenditure:\n- **For 50 users:** $8,750\n\nThus, the total monthly expenditure for 50 users on the Tier-3 Platinum plan is $8,750."
+      }
+    ]
+  }
+]

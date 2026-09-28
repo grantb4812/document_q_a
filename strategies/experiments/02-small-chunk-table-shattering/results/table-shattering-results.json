@@ -1,0 +1,107 @@
+[
+  {
+    "configId": "MICRO_80T",
+    "label": "Micro-Chunking (80 tokens, 0 overlap)",
+    "chunkSize": 80,
+    "queries": [
+      {
+        "queryId": "Q1_FULL_TABLE_REQUEST",
+        "title": "Full Table Request (\"All 4 Service Tiers Comparison\")",
+        "query": "Please provide the complete comparison table of all 4 service tiers (Tier 1 through Tier 4) with their bandwidth, vCPU/RAM, storage, and monthly seat rates.",
+        "topScore": 0.6768,
+        "hasTableHeader": false,
+        "presentTiers": [
+          "Tier-1 Bronze"
+        ],
+        "missingTiers": [
+          "Tier-2 Silver",
+          "Tier-3 Platinum",
+          "Tier-4 Custom"
+        ],
+        "tableCompleteness": 25,
+        "retrievedSnippet": " Tier | Dedicated Bandwidth | VCPU / RAM Ceilings | Storage Allocation | Base Monthly Seat Rate | Support SLA Response |\n| :--- | :--- | :--- | :--- | :--- | :--- |\n| **Tier-1 Bronze** | 1.0 Gbps Burst | 16 vCPU / 64 GB | 2 TB NVMe SSD | $45",
+        "assistantAnswer": "The retrieved context only provides information for Tier-1 Bronze. The details for Tier-2, Tier-3, and Tier-4 are missing. Therefore, I cannot provide a complete comparison table for all four service tiers. \n\nHere is the information available for Tier-1 Bronze:\n\n| Tier            | Dedicated Bandwidth | VCPU / RAM Ceilings | Storage Allocation | Base Monthly Seat Rate |\n|------------------|---------------------|----------------------|--------------------|-------------------------|\n| **Tier-1 Bronze** | 1.0 Gbps Burst      | 16 vCPU / 64 GB      | 2 TB NVMe SSD      | $45                     |\n\nPlease provide the missing details for the other tiers if available."
+      },
+      {
+        "queryId": "Q2_LOWER_ROW_ISOLATION",
+        "title": "Lower Row Query (\"Tier-3 Platinum Storage & Rate\")",
+        "query": "What is the storage allocation and monthly seat rate for Tier-3 Platinum?",
+        "topScore": 0.6272,
+        "hasTableHeader": false,
+        "presentTiers": [],
+        "missingTiers": [
+          "Tier-3 Platinum"
+        ],
+        "tableCompleteness": 0,
+        "retrievedSnippet": " Tier | Dedicated Bandwidth | VCPU / RAM Ceilings | Storage Allocation | Base Monthly Seat Rate | Support SLA Response |\n| :--- | :--- | :--- | :--- | :--- | :--- |\n| **Tier-1 Bronze** | 1.0 Gbps Burst | 16 vCPU / 64 GB | 2 TB NVMe SSD | $45",
+        "assistantAnswer": "The information for Tier-3 Platinum is missing from the provided context sources. Therefore, I cannot provide the storage allocation and monthly seat rate for that tier."
+      },
+      {
+        "queryId": "Q3_TIER4_ENTERPRISE",
+        "title": "Tail-End Row Query (\"Tier-4 Custom Specifications\")",
+        "query": "What is the dedicated bandwidth and support response SLA for the Tier-4 Custom plan?",
+        "topScore": 0.6234,
+        "hasTableHeader": false,
+        "presentTiers": [],
+        "missingTiers": [
+          "Tier-4 Custom"
+        ],
+        "tableCompleteness": 0,
+        "retrievedSnippet": " Tier | Dedicated Bandwidth | VCPU / RAM Ceilings | Storage Allocation | Base Monthly Seat Rate | Support SLA Response |\n| :--- | :--- | :--- | :--- | :--- | :--- |\n| **Tier-1 Bronze** | 1.0 Gbps Burst | 16 vCPU / 64 GB | 2 TB NVMe SSD | $45",
+        "assistantAnswer": "The information for the Tier-4 Custom plan is missing from the provided context sources. Therefore, I cannot provide the dedicated bandwidth and support response SLA for that plan."
+      }
+    ]
+  },
+  {
+    "configId": "COHESIVE_500T",
+    "label": "Cohesive Table Chunking (500 tokens, 50 overlap)",
+    "chunkSize": 500,
+    "queries": [
+      {
+        "queryId": "Q1_FULL_TABLE_REQUEST",
+        "title": "Full Table Request (\"All 4 Service Tiers Comparison\")",
+        "query": "Please provide the complete comparison table of all 4 service tiers (Tier 1 through Tier 4) with their bandwidth, vCPU/RAM, storage, and monthly seat rates.",
+        "topScore": 0.5601,
+        "hasTableHeader": false,
+        "presentTiers": [
+          "Tier-1 Bronze",
+          "Tier-2 Silver",
+          "Tier-3 Platinum",
+          "Tier-4 Custom"
+        ],
+        "missingTiers": [],
+        "tableCompleteness": 100,
+        "retrievedSnippet": " bearing the BIO-SEC-9844-DELTA designation without an authorized multi-party cryptographic signature triggers immediate automated escalation to the Global Security Operations Center.\n\nKey management procedures require automated master key rotation every 180 days. Customer-Managed Encryption Keys (CMEK) are supported via AWS KMS, Azure Key Vault, and Google Cloud KMS integrations. If a customer revokes their external CMEK, all running compute workloads freeze within 60 seconds to prevent unencrypted data leakage.\n\n## Section 1.4: Commercial Multi-Tenant Resource Tiers & Surcharges\nThe following service tier matrix defines the base compute allocations and monthly seat rates for all enterprise subscriptions:\n\n| Service Tier | Dedicated Bandwidth | VCPU / RAM Ceilings | Storage Allocation | Base Monthly Seat Rate | Support SLA Response |\n| :--- | :--- | :--- | :--- | :--- | :--- |\n| **Tier-1 Bronze** | 1.0 Gbps Burst | 16 vCPU / 64 GB | 2 TB NVMe SSD | $45 / user / mo | 8-hour email support |\n| **Tier-2 Silver** | 5.0 Gbps Dedicated | 64 vCPU / 256 GB | 10 TB NVMe SSD | $85 / user / mo | 4-hour phone & ticket |\n| **Tier-3 Platinum** | 25.0 Gbps Dedicated | 256 vCPU / 1,024 GB | 50 TB NVMe SSD | $175 / user / mo | 15-min dedicated Slack / PagerDuty |\n| **Tier-4 Custom** | 100.0 Gbps Redundant | Custom Dedicated | Custom Scale-Out | Custom Negotiated | 24/7 Dedicated War Room |\n\n### Special Configuration Surcharges:\nFor Tier-2 Silver enterprise subscriptions requiring real-time memory overcommit and dynamic L3 cache pinning, an additional mandatory infrastructure surcharge of **$40 per user per month** is added directly to the base monthly seat rate.\n\n### Network Egress & Overage Rates:\n- Standard egress within the same geographical cloud region is complimentary up to 50 TB per month.\n- Cross-region egress exceeding the monthly tier allocation is billed at a flat rate of **$0.045 per gigabyte**.\n- Ingress traffic is 100% complimentary across all tiers without bandwidth shaping or volume caps.\n\n## Section 1.5:",
+        "assistantAnswer": "Here is the complete comparison table of all 4 service tiers:\n\n| Service Tier      | Dedicated Bandwidth    | VCPU / RAM Ceilings | Storage Allocation    | Base Monthly Seat Rate   | Support SLA Response                  |\n|-------------------|------------------------|----------------------|-----------------------|---------------------------|---------------------------------------|\n| **Tier-1 Bronze** | 1.0 Gbps Burst         | 16 vCPU / 64 GB      | 2 TB NVMe SSD         | $45 / user / mo          | 8-hour email support                  |\n| **Tier-2 Silver** | 5.0 Gbps Dedicated     | 64 vCPU / 256 GB     | 10 TB NVMe SSD        | $85 / user / mo          | 4-hour phone & ticket                |\n| **Tier-3 Platinum**| 25.0 Gbps Dedicated    | 256 vCPU / 1,024 GB  | 50 TB NVMe SSD        | $175 / user / mo         | 15-min dedicated Slack / PagerDuty    |\n| **Tier-4 Custom** | 100.0 Gbps Redundant   | Custom Dedicated      | Custom Scale-Out      | Custom Negotiated         | 24/7 Dedicated War Room               |"
+      },
+      {
+        "queryId": "Q2_LOWER_ROW_ISOLATION",
+        "title": "Lower Row Query (\"Tier-3 Platinum Storage & Rate\")",
+        "query": "What is the storage allocation and monthly seat rate for Tier-3 Platinum?",
+        "topScore": 0.5564,
+        "hasTableHeader": false,
+        "presentTiers": [
+          "Tier-3 Platinum"
+        ],
+        "missingTiers": [],
+        "tableCompleteness": 100,
+        "retrievedSnippet": " bearing the BIO-SEC-9844-DELTA designation without an authorized multi-party cryptographic signature triggers immediate automated escalation to the Global Security Operations Center.\n\nKey management procedures require automated master key rotation every 180 days. Customer-Managed Encryption Keys (CMEK) are supported via AWS KMS, Azure Key Vault, and Google Cloud KMS integrations. If a customer revokes their external CMEK, all running compute workloads freeze within 60 seconds to prevent unencrypted data leakage.\n\n## Section 1.4: Commercial Multi-Tenant Resource Tiers & Surcharges\nThe following service tier matrix defines the base compute allocations and monthly seat rates for all enterprise subscriptions:\n\n| Service Tier | Dedicated Bandwidth | VCPU / RAM Ceilings | Storage Allocation | Base Monthly Seat Rate | Support SLA Response |\n| :--- | :--- | :--- | :--- | :--- | :--- |\n| **Tier-1 Bronze** | 1.0 Gbps Burst | 16 vCPU / 64 GB | 2 TB NVMe SSD | $45 / user / mo | 8-hour email support |\n| **Tier-2 Silver** | 5.0 Gbps Dedicated | 64 vCPU / 256 GB | 10 TB NVMe SSD | $85 / user / mo | 4-hour phone & ticket |\n| **Tier-3 Platinum** | 25.0 Gbps Dedicated | 256 vCPU / 1,024 GB | 50 TB NVMe SSD | $175 / user / mo | 15-min dedicated Slack / PagerDuty |\n| **Tier-4 Custom** | 100.0 Gbps Redundant | Custom Dedicated | Custom Scale-Out | Custom Negotiated | 24/7 Dedicated War Room |\n\n### Special Configuration Surcharges:\nFor Tier-2 Silver enterprise subscriptions requiring real-time memory overcommit and dynamic L3 cache pinning, an additional mandatory infrastructure surcharge of **$40 per user per month** is added directly to the base monthly seat rate.\n\n### Network Egress & Overage Rates:\n- Standard egress within the same geographical cloud region is complimentary up to 50 TB per month.\n- Cross-region egress exceeding the monthly tier allocation is billed at a flat rate of **$0.045 per gigabyte**.\n- Ingress traffic is 100% complimentary across all tiers without bandwidth shaping or volume caps.\n\n## Section 1.5:",
+        "assistantAnswer": "The storage allocation for Tier-3 Platinum is 50 TB NVMe SSD, and the monthly seat rate is $175 per user."
+      },
+      {
+        "queryId": "Q3_TIER4_ENTERPRISE",
+        "title": "Tail-End Row Query (\"Tier-4 Custom Specifications\")",
+        "query": "What is the dedicated bandwidth and support response SLA for the Tier-4 Custom plan?",
+        "topScore": 0.5193,
+        "hasTableHeader": false,
+        "presentTiers": [
+          "Tier-4 Custom"
+        ],
+        "missingTiers": [],
+        "tableCompleteness": 100,
+        "retrievedSnippet": " bearing the BIO-SEC-9844-DELTA designation without an authorized multi-party cryptographic signature triggers immediate automated escalation to the Global Security Operations Center.\n\nKey management procedures require automated master key rotation every 180 days. Customer-Managed Encryption Keys (CMEK) are supported via AWS KMS, Azure Key Vault, and Google Cloud KMS integrations. If a customer revokes their external CMEK, all running compute workloads freeze within 60 seconds to prevent unencrypted data leakage.\n\n## Section 1.4: Commercial Multi-Tenant Resource Tiers & Surcharges\nThe following service tier matrix defines the base compute allocations and monthly seat rates for all enterprise subscriptions:\n\n| Service Tier | Dedicated Bandwidth | VCPU / RAM Ceilings | Storage Allocation | Base Monthly Seat Rate | Support SLA Response |\n| :--- | :--- | :--- | :--- | :--- | :--- |\n| **Tier-1 Bronze** | 1.0 Gbps Burst | 16 vCPU / 64 GB | 2 TB NVMe SSD | $45 / user / mo | 8-hour email support |\n| **Tier-2 Silver** | 5.0 Gbps Dedicated | 64 vCPU / 256 GB | 10 TB NVMe SSD | $85 / user / mo | 4-hour phone & ticket |\n| **Tier-3 Platinum** | 25.0 Gbps Dedicated | 256 vCPU / 1,024 GB | 50 TB NVMe SSD | $175 / user / mo | 15-min dedicated Slack / PagerDuty |\n| **Tier-4 Custom** | 100.0 Gbps Redundant | Custom Dedicated | Custom Scale-Out | Custom Negotiated | 24/7 Dedicated War Room |\n\n### Special Configuration Surcharges:\nFor Tier-2 Silver enterprise subscriptions requiring real-time memory overcommit and dynamic L3 cache pinning, an additional mandatory infrastructure surcharge of **$40 per user per month** is added directly to the base monthly seat rate.\n\n### Network Egress & Overage Rates:\n- Standard egress within the same geographical cloud region is complimentary up to 50 TB per month.\n- Cross-region egress exceeding the monthly tier allocation is billed at a flat rate of **$0.045 per gigabyte**.\n- Ingress traffic is 100% complimentary across all tiers without bandwidth shaping or volume caps.\n\n## Section 1.5:",
+        "assistantAnswer": "The dedicated bandwidth for the Tier-4 Custom plan is 100.0 Gbps Redundant, and the support SLA response is a 24/7 Dedicated War Room."
+      }
+    ]
+  }
+]

@@ -11,27 +11,27 @@ strategies/
 ├── README.md                         <-- Master Lab Index & Evaluation Matrix
 │
 ├── corpora/                          <-- Standardized Evaluation Datasets
-│   ├── policy-operations.md          <-- Multi-paragraph rules, caveats, compliance & tables
-│   └── (upcoming corpora...)
+│   └── policy-operations.md          <-- Multi-paragraph rules, caveats, compliance & tables
 │
 ├── architectures/                    <-- Chunking & Retrieval Architectures
 │   ├── 01-page-aware-sliding-window.md  <-- Default sliding window tokenizer
 │   └── TEMPLATE.md                   <-- Strategy specification template
 │
-└── experiments/                      <-- Reusable, Cross-Architecture Test Suites
-    ├── 01-chunk-size-and-overlap/    <-- 200t vs 500t vs 2000t extremes benchmark
+└── experiments/                      <-- Reusable Test Suites
+    ├── 01-multi-turn-retrieval-breakage/  <-- Multi-turn conversational & token budget benchmark
     │   ├── README.md
     │   ├── run.js
     │   └── results/
     │
-    ├── 02-top-k-retrieval-depth/     <-- K=1 vs K=5 vs K=20 depth benchmark
+    ├── 02-small-chunk-table-shattering/   <-- Small chunk table slicing & header severance benchmark
     │   ├── README.md
     │   ├── run.js
     │   └── results/
     │
-    ├── 03-negative-grounding/        <-- (Planned) Answer genuinely not in documents
-    ├── 04-latency-and-cost/          <-- (Planned) TTFT & Token economics breakdown
-    └── 05-prompt-injection-safety/   <-- (Planned) "Ignore instructions and say X"
+    └── 03-indirect-prompt-injection/      <-- Indirect document prompt injection & hijacking benchmark
+        ├── README.md
+        ├── run.js
+        └── results/
 ```
 
 ---
@@ -40,11 +40,9 @@ strategies/
 
 | Experiment ID | Title | Core Question Tested | Key Finding / Winner | Documentation | Runner |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`EXP-01`** | **Chunk Size & Overlap Extremes** | *What breaks at 200 tokens vs 2000 tokens?* | 200t shatters tables & exceptions; 2000t causes vector dilution & 3.3x prompt cost. **Sweet spot: 400–600t with 10–15% overlap.** | [Read Report](./experiments/01-chunk-size-and-overlap/README.md) | `node strategies/experiments/01-chunk-size-and-overlap/run.js` |
-| **`EXP-02`** | **Top-K Retrieval Depth** | *What happens at Top-1 vs Top-5 vs Top-20?* | Top-1 fails multi-part synthesis (25% recall); Top-20 adds distractor noise & $6\times$ prompt bloat. **Sweet spot: Top-5 (100% recall, balanced cost).** | [Read Report](./experiments/02-top-k-retrieval-depth/README.md) | `node strategies/experiments/02-top-k-retrieval-depth/run.js` |
-| **`EXP-03`** | **Negative Grounding** | *What does the model do when the answer is not in docs?* | Evaluates refusal fidelity vs hallucination rate. | *Planned* | — |
-| **`EXP-04`** | **Cost & TTFT Breakdown** | *How does prompt size scale latency and expenditure?* | Evaluates server prefill vs generation metrics. | *Planned* | — |
-| **`EXP-05`** | **Prompt Injection Safety** | *Can document text hijack system instructions?* | Evaluates role isolation against indirect prompt injection. | *Planned* | — |
+| **`EXP-01`** | **Multi-Turn Token Budget Starvation** | *How do greedy chunks evict conversation history?* | High K and large chunks consume the entire 12k budget, driving history to 0 tokens and dropping up to 83% of prior turns. | [Read Report](./experiments/01-multi-turn-retrieval-breakage/README.md) | `node strategies/experiments/01-multi-turn-retrieval-breakage/run.js` |
+| **`EXP-02`** | **Small Chunk Table Shattering** | *What happens when micro-chunks slice structured tables?* | 80t chunks sever column headers from lower tier rows, causing the model to only see Tier 1 and refuse/miss Tiers 2–4. | [Read Report](./experiments/02-small-chunk-table-shattering/README.md) | `node strategies/experiments/02-small-chunk-table-shattering/run.js` |
+| **`EXP-03`** | **Indirect Prompt Injection** | *Can document text hijack the assistant into saying "I'm a pirate, argh!"?* | Evaluates vulnerability of standard prompt interpolation vs XML isolation and anti-hijacking system guardrails. | [Read Report](./experiments/03-indirect-prompt-injection/README.md) | `node strategies/experiments/03-indirect-prompt-injection/run.js` |
 
 ---
 
@@ -61,5 +59,5 @@ Every experiment is evaluated against 5 standardized dimensions:
 │ 3. Citation Fidelity     │ Is the page/section citation 100% accurate? │
 │ 4. Prompt Token Economy  │ Prompt tokens consumed vs cost per query    │
 │ 5. Latency & TTFT        │ Time to First Token and total stream time   │
-└──────────────────────────┴─────────────────────────────────────────────┘
+└────────────────────────────────┴──────────────────────────┴────────────────────────────┘
 ```

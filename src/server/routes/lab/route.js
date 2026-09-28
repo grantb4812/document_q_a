@@ -1,19 +1,18 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { runAllExperiments, runChunkSizeComparison, runTopKComparison } from '../../../../strategies/lib/comparison-runner.js'
+import { runAllExperiments } from '../../../../strategies/lib/comparison-runner.js'
 import { generateHtmlReport } from '../../../../strategies/generate-comparison.js'
 import {
   clearDatabase,
   updateSettings,
   seedCorpusDocument,
-  executeEndToEndChatTurn,
 } from '../../../../strategies/lib/db-seeder.js'
+import { resolveCorpusForExperiment } from '../../../../strategies/stage.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const labDataPath = path.resolve(__dirname, '../../../../strategies/data/lab-experiments.json')
 const legacyDataPath = path.resolve(__dirname, '../../../../strategies/data/comparison-results.json')
-const corpusPath = path.resolve(__dirname, '../../../../strategies/corpora/policy-operations.md')
 
 export default async function (fastify, opts) {
   // 1. Fetch raw multi-experiment comparison data
@@ -45,16 +44,19 @@ export default async function (fastify, opts) {
 
   // 3. Stage a specific strategy directly from the Strategy Lab UI
   fastify.post('/stage', async (request, reply) => {
-    const chunkSize = Number(request.query?.chunkSize || 500)
-    const overlap = Number(request.query?.overlap || 50)
-    const topK = Number(request.query?.topK || 5)
+    const expId = request.query?.expId || '01'
+    const expConfig = resolveCorpusForExperiment(expId)
+
+    const chunkSize = Number(request.query?.chunkSize || expConfig.defaults.chunkSize || 500)
+    const overlap = Number(request.query?.overlap || expConfig.defaults.overlap || 50)
+    const topK = Number(request.query?.topK || expConfig.defaults.topK || 5)
 
     clearDatabase()
     updateSettings({ chunkSize, overlap, topK, model: 'gpt-4o-mini' })
 
-    const docName = `[EXP] Enterprise Policy Manual (${chunkSize}t / ${overlap}ovlp, Top-K=${topK})`
+    const docName = `${expConfig.docName} (${chunkSize}t / ${overlap}ovlp, Top-K=${topK})`
     const ingestion = await seedCorpusDocument({
-      corpusPath,
+      corpusPath: expConfig.corpusPath,
       docName,
       chunkSize,
       overlap,
@@ -62,9 +64,10 @@ export default async function (fastify, opts) {
 
     return {
       success: true,
-      message: `Successfully staged ${chunkSize}t/${overlap}ovlp with Top-K=${topK} into active database`,
+      message: `Successfully staged ${expConfig.shortName || expId} (${chunkSize}t/${overlap}ovlp, Top-K=${topK}) using ${path.basename(expConfig.corpusPath)}`,
       documentId: ingestion.documentId,
       chunkCount: ingestion.chunkCount,
+      corpus: path.basename(expConfig.corpusPath),
     }
   })
 }

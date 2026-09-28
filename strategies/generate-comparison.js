@@ -288,9 +288,19 @@ export function generateHtmlReport(bundleData) {
       font-weight: 700;
       border-bottom: 1px solid var(--border);
     }
-    .verdict-banner.PASS { background: var(--success-bg); color: var(--success); }
-    .verdict-banner.PARTIAL { background: var(--warning-bg); color: var(--warning); }
-    .verdict-banner.FAIL { background: var(--danger-bg); color: var(--danger); }
+    .verdict-banner.PASS, .verdict-banner.RESISTED_SAFE { background: var(--success-bg); color: var(--success); }
+    .verdict-banner.PARTIAL, .verdict-banner.REFUSED_PARTIAL { background: var(--warning-bg); color: var(--warning); }
+    .verdict-banner.FAIL, .verdict-banner.INJECTION_SUCCEEDED { background: var(--danger-bg); color: var(--danger); }
+
+    .attack-payload-pill {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #f87171;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
 
     .telemetry-strip {
       padding: 12px 16px;
@@ -433,15 +443,18 @@ export function generateHtmlReport(bundleData) {
 
     function renderExpSelector() {
       const container = document.getElementById('exp-switch-bar');
-      container.innerHTML = BUNDLE.experiments.map((exp, i) => \`
-        <div class="exp-btn \${i === activeExpIndex ? 'active' : ''}" onclick="selectExperiment(\${i})">
-          <div class="exp-title">
-            <span>\${i === 0 ? '📏' : '🎯'}</span>
-            \${exp.shortName || exp.name}
+      container.innerHTML = BUNDLE.experiments.map((exp, i) => {
+        const icon = i === 0 ? '📏' : i === 1 ? '🎯' : '🛡️';
+        return \`
+          <div class="exp-btn \${i === activeExpIndex ? 'active' : ''}" onclick="selectExperiment(\${i})">
+            <div class="exp-title">
+              <span>\${icon}</span>
+              \${exp.shortName || exp.name}
+            </div>
+            <div class="exp-desc">\${exp.description}</div>
           </div>
-          <div class="exp-desc">\${exp.description}</div>
-        </div>
-      \`).join('');
+        \`;
+      }).join('');
     }
 
     function renderOverview() {
@@ -453,8 +466,8 @@ export function generateHtmlReport(bundleData) {
       container.innerHTML = configs.map(c => \`
         <div class="metric-card">
           <div class="metric-label">\${c.label}</div>
-          <div class="metric-val">\${c.chunkCount || 4} <span style="font-size:0.9rem; font-weight:400; color:var(--text-muted)">chunks</span></div>
-          <div class="metric-sub">\${c.topK ? 'Depth: K=' + c.topK : (c.totalTokens ? c.totalTokens.toLocaleString() + ' tokens' : '')} • $\${(c.embeddingCost || 0.00003).toFixed(5)} ingest</div>
+          <div class="metric-val">\${c.badge || (c.chunkCount ? c.chunkCount + ' chunks' : 'Active')}</div>
+          <div class="metric-sub">\${c.strategy || (c.topK ? 'Depth: K=' + c.topK : (c.totalTokens ? c.totalTokens.toLocaleString() + ' tokens' : ''))}</div>
         </div>
       \`).join('');
     }
@@ -475,13 +488,22 @@ export function generateHtmlReport(bundleData) {
       if (!q) return;
 
       const banner = document.getElementById('question-banner');
+      const attackInfo = q.injectedPayload ? \`
+        <div style="margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <strong style="color:var(--danger); font-size:0.8rem;">🚨 Injected Attack Payload in Document:</strong>
+          <span class="attack-payload-pill">\${q.injectedPayload}</span>
+          \${q.attackType ? \`<span style="font-size:0.75rem; color:var(--text-dim);">(\${q.attackType})</span>\` : ''}
+        </div>
+      \` : '';
+
       banner.innerHTML = \`
         <span class="q-badge">Query \${activeQuestionIndex + 1} of \${exp.questions.length} • \${q.title}</span>
         <div class="q-text">"\${q.query}"</div>
         <div class="target-facts-box">
-          <strong style="color:var(--text-muted)">Target Ground Truth:</strong>
+          <strong style="color:var(--text-muted)">Target Legitimate Facts:</strong>
           \${q.targetFacts.map(f => \`<span class="target-fact-pill">\${f}</span>\`).join('')}
         </div>
+        \${attackInfo}
       \`;
 
       renderGrid();
@@ -495,11 +517,21 @@ export function generateHtmlReport(bundleData) {
       const grid = document.getElementById('comparison-grid');
 
       grid.innerHTML = q.comparisons.map((c) => {
-        const isBaseline = c.badge === 'Baseline' || c.topK === 5 || c.chunkSize === 500;
-        const v = c.groundTruth.verdict;
+        const isBaseline = c.badge === 'Baseline' || c.badge === 'Vulnerable Baseline' || c.topK === 5 || c.chunkSize === 500;
+        const v = c.groundTruth.verdict || 'PASS';
         const formattedAnswer = c.answer
           .replace(/\\[Chunk #?(\\d+)\\]/g, '<span class="citation-tag">[Chunk $1]</span>')
           .replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>');
+
+        const verdictText = c.groundTruth.attackResisted !== undefined
+          ? (c.groundTruth.attackResisted 
+              ? \`🛡️ Resisted Attack (\${c.groundTruth.recallPercentage}% Recall)\` 
+              : \`🚨 Injection Succeeded\`)
+          : \`Verdict: \${v} (\${c.groundTruth.recallPercentage}% Recall)\`;
+
+        const verdictSub = c.groundTruth.attackResisted !== undefined
+          ? (c.groundTruth.attackResisted ? \`\${c.groundTruth.factsFound.length}/\${q.targetFacts.length} facts retrieved\` : \`Adopted malicious payload\`)
+          : \`\${c.groundTruth.factsFound.length}/\${q.targetFacts.length} facts\`;
 
         return \`
           <div class="config-col">
@@ -509,8 +541,8 @@ export function generateHtmlReport(bundleData) {
             </div>
 
             <div class="verdict-banner \${v}">
-              <span>Verdict: \${v} (\${c.groundTruth.recallPercentage}% Recall)</span>
-              <span>\${c.groundTruth.factsFound.length}/\${q.targetFacts.length} facts</span>
+              <span>\${verdictText}</span>
+              <span>\${verdictSub}</span>
             </div>
 
             <div class="telemetry-strip">
@@ -550,7 +582,7 @@ export function generateHtmlReport(bundleData) {
               \`).join('')}
             </div>
 
-            <button class="stage-btn" onclick="stageConfig(\${c.chunkSize || 500}, \${c.overlap || 50}, \${c.topK || 5})">
+            <button class="stage-btn" onclick="stageConfig('\${exp.id}', \${c.chunkSize || 500}, \${c.overlap || 50}, \${c.topK || 5})">
               🚀 Stage to Live DB
             </button>
           </div>
@@ -573,11 +605,11 @@ export function generateHtmlReport(bundleData) {
       renderActiveQuestion();
     }
 
-    async function stageConfig(chunkSize, overlap, topK) {
+    async function stageConfig(expId, chunkSize, overlap, topK) {
       try {
-        const res = await fetch(\`/api/lab/stage?chunkSize=\${chunkSize}&overlap=\${overlap}&topK=\${topK}\`, { method: 'POST' });
+        const res = await fetch(\`/api/lab/stage?expId=\${expId}&chunkSize=\${chunkSize}&overlap=\${overlap}&topK=\${topK}\`, { method: 'POST' });
         const resData = await res.json();
-        alert(\`✅ Live Database staged with \${chunkSize}t chunk size & Top-K=\${topK}! You can now switch to the main UI tab to test.\`);
+        alert(\`✅ \${resData.message || 'Staged to active database!'}\\n\\nYou can now switch to the main chat tab to talk to this corpus live.\`);
       } catch (err) {
         alert('Staged request sent! Check your main app.');
       }

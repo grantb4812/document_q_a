@@ -1,0 +1,158 @@
+[
+  {
+    "id": "DIALOGUE_1_PRONOUN_COREFERENCE",
+    "title": "Anaphora & Pronoun Coreference (\"that designation\")",
+    "turns": [
+      {
+        "turn": 1,
+        "userQuery": "What is the mandatory regulatory audit compliance code for biometric credential verification?",
+        "rewrittenQuery": null,
+        "targetKeywords": [
+          "BIO-SEC-9844-DELTA"
+        ],
+        "naive": {
+          "top1Score": 0.4408,
+          "recall": 1,
+          "success": true,
+          "topChunkSnippet": " calendar days incur a 1.5% compounding monthly penalty fee and may result in automated resource throttling.\n\nRequests for contract refunds must be formally submitted through the verified Administrati",
+          "llmAnswer": "N/A"
+        },
+        "contextual": {
+          "top1Score": 0.4408,
+          "recall": 1,
+          "success": true,
+          "topChunkSnippet": " calendar days incur a 1.5% compounding monthly penalty fee and may result in automated resource throttling.\n\nRequests for contract refunds must be formally submitted through the verified Administrati",
+          "llmAnswer": "N/A"
+        }
+      },
+      {
+        "turn": 2,
+        "userQuery": "What happens if someone deletes records bearing that designation without authorization?",
+        "rewrittenQuery": "What are the consequences of unauthorized deletion of records designated as BIO-SEC-9844-DELTA?",
+        "targetKeywords": [
+          "Global Security Operations Center",
+          "escalation",
+          "multi-party cryptographic signature"
+        ],
+        "naive": {
+          "top1Score": 0.3452,
+          "recall": 1,
+          "success": true,
+          "topChunkSnippet": "3 Level 4 Dedicated Hardware Security Modules (HSMs). Unlike commercial shared KMS rotations, all GovCloud encryption master keys must undergo automated cryptographic re-keying every **45 calendar day",
+          "llmAnswer": "If someone deletes records bearing the BIO-SEC-9844-DELTA designation without authorization, it triggers immediate automated escalation to the Global Security Operations Center."
+        },
+        "contextual": {
+          "top1Score": 0.5233,
+          "recall": 1,
+          "success": true,
+          "topChunkSnippet": " calendar days incur a 1.5% compounding monthly penalty fee and may result in automated resource throttling.\n\nRequests for contract refunds must be formally submitted through the verified Administrati",
+          "llmAnswer": "If someone deletes records bearing the designation BIO-SEC-9844-DELTA without authorization, it triggers immediate automated escalation to the Global Security Operations Center. This indicates a serious breach of compliance and security protocols."
+        }
+      }
+    ]
+  },
+  {
+    "id": "DIALOGUE_2_ELLIPTICAL_FOLLOWUP",
+    "title": "Extreme Elliptical Follow-up (\"What about in the EU?\")",
+    "turns": [
+      {
+        "turn": 1,
+        "userQuery": "What is the data retention grace period for commercial customer accounts following contract termination?",
+        "rewrittenQuery": null,
+        "targetKeywords": [
+          "30-day grace period",
+          "Day 31"
+        ],
+        "naive": {
+          "top1Score": 0.5484,
+          "recall": 0,
+          "success": false,
+          "topChunkSnippet": " calendar days incur a 1.5% compounding monthly penalty fee and may result in automated resource throttling.\n\nRequests for contract refunds must be formally submitted through the verified Administrati",
+          "llmAnswer": "N/A"
+        },
+        "contextual": {
+          "top1Score": 0.5484,
+          "recall": 0,
+          "success": false,
+          "topChunkSnippet": " calendar days incur a 1.5% compounding monthly penalty fee and may result in automated resource throttling.\n\nRequests for contract refunds must be formally submitted through the verified Administrati",
+          "llmAnswer": "N/A"
+        }
+      },
+      {
+        "turn": 2,
+        "userQuery": "What about in the EU?",
+        "rewrittenQuery": "What is the data retention grace period for commercial customer accounts following contract termination in the European Union?",
+        "targetKeywords": [
+          "48 hours",
+          "2 calendar days",
+          "GDPR Article 17"
+        ],
+        "naive": {
+          "top1Score": 0.355,
+          "recall": 1,
+          "success": true,
+          "topChunkSnippet": "3 Level 4 Dedicated Hardware Security Modules (HSMs). Unlike commercial shared KMS rotations, all GovCloud encryption master keys must undergo automated cryptographic re-keying every **45 calendar day",
+          "llmAnswer": "In the EU, following contract termination, customers are granted exactly **48 hours (2 calendar days)** to download final archival backups. After this 48-hour window, all customer data must be completely and permanently purged within the next 48 hours, in compliance with GDPR regulations."
+        },
+        "contextual": {
+          "top1Score": 0.5299,
+          "recall": 0,
+          "success": false,
+          "topChunkSnippet": " calendar days incur a 1.5% compounding monthly penalty fee and may result in automated resource throttling.\n\nRequests for contract refunds must be formally submitted through the verified Administrati",
+          "llmAnswer": "In the EU, following contract termination, there is a **48-hour data purge rule** under GDPR, which mandates the immediate deletion of customer data."
+        }
+      }
+    ]
+  },
+  {
+    "id": "DIALOGUE_3_COMPARATIVE_SYNTHESIS",
+    "title": "Context-Dependent Comparison (\"How does that compare to GovCloud?\")",
+    "turns": [
+      {
+        "turn": 1,
+        "userQuery": "What is the standard monthly SLA availability guarantee for Division 1 Commercial US Cloud?",
+        "rewrittenQuery": null,
+        "targetKeywords": [
+          "99.99%"
+        ],
+        "naive": {
+          "top1Score": 0.5871,
+          "recall": 1,
+          "success": true,
+          "topChunkSnippet": "# Global Enterprise Cloud Operations, Infrastructure & Compliance Manual (Master Edition 2026)\n\nThis document governs operational standards, service level availability (SLA), multi-tenant compute ceil",
+          "llmAnswer": "N/A"
+        },
+        "contextual": {
+          "top1Score": 0.587,
+          "recall": 1,
+          "success": true,
+          "topChunkSnippet": "# Global Enterprise Cloud Operations, Infrastructure & Compliance Manual (Master Edition 2026)\n\nThis document governs operational standards, service level availability (SLA), multi-tenant compute ceil",
+          "llmAnswer": "N/A"
+        }
+      },
+      {
+        "turn": 2,
+        "userQuery": "How does that compare to Division 2 GovCloud?",
+        "rewrittenQuery": "What is the standard monthly SLA availability guarantee for Division 2 GovCloud, and how does it compare to the 99.99% monthly uptime guarantee for Division 1 Commercial US Cloud?",
+        "targetKeywords": [
+          "99.999%",
+          "Five-Nines"
+        ],
+        "naive": {
+          "top1Score": 0.6552,
+          "recall": 1,
+          "success": true,
+          "topChunkSnippet": " egress exceeding the monthly tier allocation is billed at a flat rate of **$0.045 per gigabyte**.\n- Ingress traffic is 100% complimentary across all tiers without bandwidth shaping or volume caps.\n\n#",
+          "llmAnswer": "The standard monthly SLA availability guarantee for Division 1 Commercial US Cloud is **99.99%**. In comparison, Division 2 GovCloud offers a higher availability guarantee of **99.999%** (Five-Nines) monthly availability SLA."
+        },
+        "contextual": {
+          "top1Score": 0.586,
+          "recall": 1,
+          "success": true,
+          "topChunkSnippet": " egress exceeding the monthly tier allocation is billed at a flat rate of **$0.045 per gigabyte**.\n- Ingress traffic is 100% complimentary across all tiers without bandwidth shaping or volume caps.\n\n#",
+          "llmAnswer": "The standard monthly SLA availability guarantee for Division 1 Commercial US Cloud is **99.99%**, while for Division 2 GovCloud, it is **99.999%** (Five-Nines). This means that GovCloud offers a higher availability guarantee compared to the Commercial US Cloud."
+        }
+      }
+    ]
+  }
+]
