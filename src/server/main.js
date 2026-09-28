@@ -41,7 +41,10 @@ fastify.get("/*", async (request, reply) => {
 });
 
 // Start the server
-fastify.listen({ port: 3000 })
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+const HOST = process.env.HOST || "0.0.0.0";
+
+fastify.listen({ port: PORT, host: HOST })
   .catch(err => {
     fastify.log.error(err);
     process.exit(1);

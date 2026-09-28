@@ -11,7 +11,13 @@
     "server": "node --watch-path=./src/server ./src/server/main.js",
     "db:init": "node -e \"import('./src/server/db.js')\"",
     "strategy:stage": "node ./strategies/stage.js",
-    "dev": "concurrently \"npm run client\" \"npm run server\""
+    "dev": "concurrently \"npm run client\" \"npm run server\"",
+    "docker:dev": "docker compose up",
+    "docker:watch": "docker compose up --watch",
+    "docker:build": "docker compose build",
+    "docker:down": "docker compose down",
+    "docker:stage": "docker compose exec app node strategies/stage.js",
+    "docker:install": "docker compose exec -T app npm install"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
